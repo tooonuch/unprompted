@@ -3,7 +3,25 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>10.8.0 - 25 March 2024</summary>
+<details open><summary>10.9.0 - 19 April 2024</summary>
+
+### Added
+- New free template SDXL Lightning: Allows you to easily enable use of Lightning LORAs
+- `[civitai]`: Now supports parsing shortcodes within the `_file` and `_mvid` kwargs
+
+### Changed
+- Magic Spice v0.0.2 template: Set the default `inference_preset` to `none`
+- Magic Spice v0.0.2 template: Set `do_gpt` to 0
+
+### Fixed
+- Fixed a bug that prevented Wizard templates from setting slider elements to a float value by default
+
+### Removed
+- All txt2img `lightning` presets, simply enable the new SDXL Lightning template instead
+
+</details>
+
+<details><summary>10.8.0 - 25 March 2024</summary>
 
 ### Added
 - `[gpt]`: Now supports `tokenizer` kwarg to load a separate model as the tokenizer

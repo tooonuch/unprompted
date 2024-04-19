@@ -48,8 +48,8 @@
 	"syntax":
 	{
 		"sanitize_before":{"\n":"\\n","\t":""},
-		"sanitize_after":{"\\n":" "},
-		"sanitize_block":{"\n":""},
+		"sanitize_after":{"\\n":" ","NEWLINE":"\n"},
+		"sanitize_block":{"\n":"","NEWLINE":"\n"},
 		"tag_start":"[",
 		"tag_end":"]",
 		"tag_start_alt":"{",

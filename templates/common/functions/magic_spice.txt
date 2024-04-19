@@ -1,4 +1,4 @@
-[template name="Magic Spice v0.0.1"]
+[template name="Magic Spice v0.0.2"]
 ![Preview]([base_dir]/magic_spice.png)
 This template elevates your prompts using techniques from Fooocus and elsewhere. It helps ensure high-quality images regardless of the simplicity of your prompt. **Some spices may yield NSFW terms due to GPT-2 prompt expansion.**
 
@@ -28,9 +28,9 @@ Optimizing for quality means that the model will try to generate the best possib
 [set aspect_ratio _new _ui="radio" _choices="■ Square|↕️ Portrait|↔️ Landscape|Custom"]■ Square[/set]
 
 [wizard accordion _label="⚙️ Advanced Settings"]
-	[set inference_preset _new _info="Locks CFG scale, sampler method, etc. to recommended values" _label="Inference Preset" _ui="dropdown" _choices="none|{filelist '%BASE_DIR%/templates/common/presets/txt2img/*.*' _basename _hide_ext}"]restart_v1[/set]
+	[set inference_preset _new _info="Locks CFG scale, sampler method, etc. to recommended values" _label="Inference Preset" _ui="dropdown" _choices="none|{filelist '%BASE_DIR%/templates/common/presets/txt2img/*.*' _basename _hide_ext}"]none[/set]
 	[set do_fluff _new _label="Use fluff terms" _ui="checkbox"]1[/set]
-	[set do_gpt _new _label="Use GPT-2 prompt expansion" _ui="checkbox"]1[/set]
+	[set do_gpt _new _label="Use GPT-2 prompt expansion" _ui="checkbox"]0[/set]
 	[set do_networks _new _label="Use extra networks" _ui="checkbox"]1[/set]
 	[set do_negatives _new _label="Use negative prompt" _ui="checkbox"]1[/set]
 	[set do_autotone _new _label="Fix contrast issues" _ui="checkbox"]1[/set]

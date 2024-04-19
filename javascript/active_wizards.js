@@ -14,7 +14,6 @@
 		{
 			if (checkbox.checked)
 			{
-				console.log("found checkbox");
 				active_unit_count++;
 			}
 		});

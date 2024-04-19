@@ -1,2 +1,0 @@
-[# Note: This preset is only compatible with WebUI Forge and requires the SDXL Lightning 8-step LORA. ]
-[sets cfg_scale=2.0 sampler_name="DPM++ 2M SDE SGMUniform" steps=8]

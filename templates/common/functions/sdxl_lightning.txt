@@ -1,0 +1,33 @@
+[template name="SDXL Lightning v0.0.1"]
+![Preview]([base_dir]/sdxl_lightning.png)
+
+Toggles support for the Lightning LORA for quick SDXL inference. Downloads the required LORA files from Civitai unless you already have them.
+[/template]
+
+[set lightning_steps _new _ui="dropdown" _choices="2|4|8"]8[/set]
+
+[switch lightning_steps]
+[case 2][sets mid=391994][/case]
+[case 4][sets mid=391997][/case]
+[case 8][sets mid=391999][/case]
+[/switch]
+
+[set lightning_step_name][get lightning_steps][/set]
+
+[set new_cfg _new _ui="slider" _label="New CFG Scale" _minimum=0 _maximum=30 _info="You typically want to set this to around half of your normal CFG, but it depends on the checkpoint." _step=0.5]4[/set]
+
+[set lightning_strength _new _ui="slider" _label="LORA Strength" _minimum=0 _maximum=1 _step=0.1 _info="Adjusts weight, steps, and CFG accordingly."]0.5[/set]
+
+[if "lightning_strength != 1.0"]
+	[set new_cfg _append][eval][get new_cfg] / [get lightning_strength] / 4[/eval][/set]
+	[set lightning_steps _append][cast int][eval][get lightning_steps] / [get lightning_strength] / 4[/eval][/cast][/set]
+[/if]
+
+[set do_lightning_lora _new _ui="checkbox" _label="Use Lightning LORA" _info="Some models have the LORA pre-baked, in which case you should disable this."]1[/set]
+
+[set lora_filename _new _label="LORA Filename Pattern"]sdxl_lightning_[get lightning_step_name]step_lora[/set]
+
+[sets scheduler="SGM Uniform" cfg_scale="{get new_cfg}" steps="{get lightning_steps}"]
+[if do_lightning_lora]
+	[civitai _weight="lightning_strength" _file="lora_filename" _id=350450 _mvid="mid"]
+[/if]

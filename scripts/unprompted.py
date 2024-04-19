@@ -375,7 +375,7 @@ class Scripts(scripts.Script):
 								elif (block_name == "radio"):
 									obj = gr.Radio(label=this_label, choices=kwargs["_choices"].split(Unprompted.Config.syntax.delimiter), interactive=True, value=content, show_label=_show_label)
 								elif (block_name == "slider"):
-									obj = gr.Slider(label=this_label, value=int(content), minimum=kwargs["_minimum"] if "_minimum" in kwargs else 1, maximum=kwargs["_maximum"] if "_maximum" in kwargs else 10, step=kwargs["_step"] if "_step" in kwargs else 1, info=_info, show_label=_show_label)
+									obj = gr.Slider(label=this_label, value=float(content), minimum=kwargs["_minimum"] if "_minimum" in kwargs else 1, maximum=kwargs["_maximum"] if "_maximum" in kwargs else 10, step=kwargs["_step"] if "_step" in kwargs else 1, info=_info, show_label=_show_label)
 								elif (block_name == "image"):
 									if len(content) < 1: content = None
 									obj = gr.Image(label=this_label, value=content, type="filepath", interactive=True, info=_info, show_label=_show_label)

@@ -107,7 +107,7 @@ class Unprompted:
 		self.log.info(f"Finished loading in {time.time()-start_time} seconds.")
 
 	def __init__(self, base_dir="."):
-		self.VERSION = "10.8.0"
+		self.VERSION = "10.9.0"
 
 		self.shortcode_modules = {}
 		self.shortcode_objects = {}
@@ -279,7 +279,7 @@ class Unprompted:
 		if delimiter == None: delimiter = self.Config.syntax.delimiter
 
 		# If a datatype is not specified, we refer to the type of the default value
-		if not datatype:
+		if datatype == None:
 			datatype = type(default)
 
 		if pargs and key in pargs:
@@ -303,6 +303,7 @@ class Unprompted:
 				for idx, val in enumerate(default):
 					default[idx] = datatype(val)
 			else:
+				# self.log.debug(f"What is default {default} and datatype {datatype} and key {key}")
 				default = datatype(default)
 		except ValueError:
 			self.log.warning(f"Could not cast {default} to {datatype}.")

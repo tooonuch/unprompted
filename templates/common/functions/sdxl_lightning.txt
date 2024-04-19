@@ -16,7 +16,7 @@ Toggles support for the Lightning LORA for quick SDXL inference. Downloads the r
 
 [set new_cfg _new _ui="slider" _label="New CFG Scale" _minimum=0 _maximum=30 _info="You typically want to set this to around half of your normal CFG, but it depends on the checkpoint." _step=0.5]4[/set]
 
-[set lightning_strength _new _ui="slider" _label="LORA Strength" _minimum=0 _maximum=1 _step=0.1 _info="Adjusts weight, steps, and CFG accordingly."]0.5[/set]
+[set lightning_strength _new _ui="slider" _label="LORA Strength" _minimum=0 _maximum=1 _step=0.1 _info="Adjusts weight, steps, and CFG accordingly."]1.0[/set]
 
 [if "lightning_strength != 1.0"]
 	[set new_cfg _append][eval][get new_cfg] / [get lightning_strength] / 4[/eval][/set]

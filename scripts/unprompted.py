@@ -120,7 +120,7 @@ def wizard_generate_template(option, is_img2img, html_safe=True, prepend="", app
 				if block_is_container(block_name):
 					result = parse_children(gr_obj, result)
 				else:
-					if block_name == "label" or block_name == "markdown" or gr_obj.value is None or gr_obj.value == "": continue  # Skip empty fields
+					if block_name == "label" or block_name == "markdown" or gr_obj.value is None or gr_obj.value == "" or Unprompted.Config.syntax.wizard_delimiter not in gr_obj.label: continue  # Skip empty fields
 					arg_name = gr_obj.label.split(" ")[-1]  # Get everything after the last space
 					# Skip special fields
 					if block_name == "file":
@@ -142,7 +142,9 @@ def wizard_generate_template(option, is_img2img, html_safe=True, prepend="", app
 	result = parse_children(group, result)
 
 	for kwarg in Unprompted.wizard_template_kwargs[option]:
-		result += f" {kwarg}='{Unprompted.wizard_template_kwargs[option][kwarg]}'"
+		if kwarg == "name": this_kwarg = "template_name"
+		else: this_kwarg = kwarg
+		result += f" {this_kwarg}='{Unprompted.wizard_template_kwargs[option][kwarg]}'"
 
 	# Closing bracket
 	result += Unprompted.Config.syntax.tag_end
@@ -443,7 +445,11 @@ class Scripts(scripts.Script):
 										# Render the text file's UI with special parser object
 										wizard_shortcode_parser.parse(file.read())
 										# Auto-include is always the last element
-										gr.Checkbox(label=f"🪄 Auto-include {self.dropdown_item_name} in prompt", value=False, elem_classes=["wizard-autoinclude", mode_string])
+										with gr.Row(equal_height=True, elem_classes=["wizard-autoinclude-row"], variant="panel"):
+											obj = gr.Checkbox(label=f"🪄 Auto-include {self.dropdown_item_name} in:", value=hasattr(Unprompted.Config.ui.wizard_template_autoincludes, self.dropdown_item_name), elem_classes=["wizard-autoinclude", mode_string], scale=8)
+											gr.Dropdown(value="prompt", choices=["prompt", "negative_prompt", "after", "your_var"], allow_custom_value=True, elem_classes=["autoinclude-mode"], show_label=False, scale=4)
+											gr.Number(show_label=False, value=1, minimum=1, elem_classes=["autoinclude-order"], scale=3, min_width=1)
+											setattr(obj, "do_not_save_to_config", True)
 										# Add event listeners
 										wizard_prep_event_listeners(self.filtered_templates[filename])
 									Unprompted.log.debug(f"Added {'img2img' if is_img2img else 'txt2img'} Wizard Template: {self.dropdown_item_name}")
@@ -488,8 +494,14 @@ class Scripts(scripts.Script):
 												if hasattr(Unprompted.shortcode_objects[key], "run_block"): gr.Textbox(label="Content", max_lines=2, min_lines=2)
 												# Run the shortcode's UI template to populate
 												Unprompted.shortcode_objects[key].ui(gr)
+
 												# Auto-include is always the last element
-												gr.Checkbox(label=f"🪄 Auto-include [{key}] in prompt", value=False, elem_classes=["wizard-autoinclude", mode_string])
+												with gr.Row(equal_height=True, elem_classes=["wizard-autoinclude-row"], variant="panel"):
+													obj = gr.Checkbox(label=f"🪄 Auto-include [{key}] in:", value=hasattr(Unprompted.Config.ui.wizard_shortcode_autoincludes, key), elem_classes=["wizard-autoinclude", mode_string], scale=8)
+													gr.Dropdown(value="prompt", choices=["prompt", "negative_prompt", "after", "your_var"], allow_custom_value=True, scale=4, elem_classes=["autoinclude-mode"], show_label=False)
+													gr.Number(show_label=False, value=1, minimum=1, elem_classes=["autoinclude-order"], scale=2, min_width=1)
+													setattr(obj, "do_not_save_to_config", True)
+
 												# Add event listeners
 												wizard_prep_event_listeners(self.filtered_shortcodes[key])
 
@@ -624,14 +636,14 @@ class Scripts(scripts.Script):
 
 		if match_main_seed:
 			if p.seed == -1:
-				from modules.processing import get_fixed_seed
-				p.seed = get_fixed_seed(-1)
+				from modules.processing import fix_seed
+				fix_seed(p)
 			Unprompted.log.debug(f"Synchronizing seed with WebUI: {p.seed}")
 			unprompted_seed = p.seed
 
-		if unprompted_seed != -1:
-			import random
-			random.seed(unprompted_seed)
+		#if unprompted_seed != -1:
+		#	import random
+		#	random.seed(unprompted_seed)
 
 		Unprompted.fix_hires_prompts = False
 		if hasattr(p, "hr_prompt"):
@@ -652,30 +664,69 @@ class Scripts(scripts.Script):
 			# This var is necessary for batch processing
 			p.unprompted_original_prompt = Unprompted.original_prompt
 
+		def wizard_generate_autoinclude(tab, autoinclude_mode, idx, key, order, is_img2img):
+			prefix = ""
+			affix = ""
+
+			if autoinclude_mode == "negative_prompt": prompt = Unprompted.original_negative_prompt
+			else:
+				prompt = Unprompted.original_prompt
+				# Support variable encapsulation
+				if autoinclude_mode != "prompt":
+					if autoinclude_mode == "after":
+						prefix = f"{Unprompted.Config.syntax.tag_start}after {order}{Unprompted.Config.syntax.tag_end}"
+						affix = f"{Unprompted.Config.syntax.tag_start}{Unprompted.Config.syntax.tag_close}after{Unprompted.Config.syntax.tag_end}"
+					else:
+						prefix = f"{Unprompted.Config.syntax.tag_start}set {autoinclude_mode} _append{Unprompted.Config.syntax.tag_end}"
+						affix = f"{Unprompted.Config.syntax.tag_start}{Unprompted.Config.syntax.tag_close}set{Unprompted.Config.syntax.tag_end}"
+
+			if tab == WizardModes.SHORTCODES:
+				fn = wizard_generate_shortcode
+				option = key
+			else:
+				fn = wizard_generate_template
+				option = idx
+
+			if Unprompted.Config.ui.wizard_prepends:
+				Unprompted.original_prompt = fn(option, is_img2img, False, prefix, prompt + affix)
+			else:
+				Unprompted.original_prompt = fn(option, is_img2img, False, prefix + prompt, affix)
+
+			if autoinclude_mode == "prompt":
+				p.all_prompts[0] = Unprompted.original_prompt
+				p.unprompted_original_prompt = Unprompted.original_prompt
+			else:
+				p.all_negative_prompts[0] = Unprompted.original_negative_prompt
+				p.original_negative_prompt = Unprompted.original_negative_prompt
+
 		# Process Wizard auto-includes
 		if Unprompted.Config.ui.wizard_enabled and self.allow_postprocess:
 			is_img2img = hasattr(p, "init_images")
+			autoinclude_data = []
 
-			for mode in range(len(WizardModes)):
-				groups = Unprompted.wizard_groups[mode][int(is_img2img)]
+			for tab in range(len(WizardModes)):
+				groups = Unprompted.wizard_groups[tab][int(is_img2img)]
 				for idx, key in enumerate(groups):
 					group = groups[key]
-					autoinclude_obj = group
+					current_objects = group
+					previous_objects = group
 
-					# In theory, this should always select the "autoinclude" checkbox at the bottom of the UI
-					while hasattr(autoinclude_obj, "children"):
-						autoinclude_obj = autoinclude_obj.children[-1]
+					# In theory, this should always select the "autoinclude" row at the bottom of the UI
+					while hasattr(current_objects, "children"):
+						previous_objects = current_objects
+						current_objects = current_objects.children[-1]
+
+					autoinclude_obj = previous_objects.children[-3]
 
 					if (autoinclude_obj.value):
-						if Unprompted.Config.ui.wizard_prepends:
-							if mode == WizardModes.SHORTCODES: Unprompted.original_prompt = wizard_generate_shortcode(key, is_img2img, False, "", Unprompted.original_prompt)
-							elif mode == WizardModes.TEMPLATES: Unprompted.original_prompt = wizard_generate_template(idx, is_img2img, False, "", Unprompted.original_prompt)
-						else:
-							if mode == WizardModes.SHORTCODES: Unprompted.original_prompt = wizard_generate_shortcode(key, is_img2img, False, Unprompted.original_prompt, "")
-							elif mode == WizardModes.TEMPLATES: Unprompted.original_prompt = wizard_generate_template(idx, is_img2img, False, Unprompted.original_prompt, "")
+						autoinclude_data.append({"tab": tab, "mode": previous_objects.children[-2].value, "order": previous_objects.children[-1].value, "idx": idx, "key": key})
 
-						p.all_prompts[0] = Unprompted.original_prompt  # test
-						p.unprompted_original_prompt = Unprompted.original_prompt
+			# Sort the autoinclude data by order
+			autoinclude_data.sort(key=lambda x: x["order"])
+
+			# Execute wizard_generate_autoinclude() in order
+			for data in autoinclude_data:
+				wizard_generate_autoinclude(data["tab"], data["mode"], data["idx"], data["key"], data["order"], is_img2img)
 
 		Unprompted.original_negative_prompt = p.all_negative_prompts[0]
 		if not hasattr(p, "unprompted_original_negative_prompt"): p.unprompted_original_negative_prompt = Unprompted.original_negative_prompt
@@ -708,7 +759,8 @@ class Scripts(scripts.Script):
 
 		if p.seed is not None and p.seed != -1.0:
 			if (helpers.is_int(p.seed)): p.seed = int(p.seed)
-			p.all_seeds[0] = p.seed
+			for i, val in enumerate(p.all_seeds):
+				p.all_seeds[i] = p.seed + i
 		else:
 			p.seed = -1
 			p.seed = fix_seed(p)

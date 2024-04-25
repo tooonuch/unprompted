@@ -88,26 +88,32 @@ details[open]
 
 .gradio-group div .wizard-autoinclude
 {
-	margin-top: 20px;
 	margin-right: 0;
 	margin-bottom: 8px;
 }
 
-.wizard-autoinclude:before
+.wizard-autoinclude-row
 {
+	margin: 20px 0;
+}
+
+.autoinclude-order
+{
+	overflow:visible !important;
+	margin-left:60px !important;
+}
+.autoinclude-order:before
+{
+	content:"Order:";
 	position: absolute;
-	width: 100%;
-	left: 0;
-	border-top: 1px solid var(--border-color-primary);
-	display: block;
-	content: " ";
-	top: -10px;
+    left: -55px;
+    display: inline-block;
+    top: 10px;
 }
 
 .wizard-autoinclude input[type="checkbox"]:checked+span
 {
 	color: var(--checkbox-background-color-selected);
-	font-weight: 1000;
 }
 
 .unprompted-badge

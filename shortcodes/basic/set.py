@@ -10,10 +10,10 @@ class Shortcode():
 		import lib_unprompted.helpers as helpers
 		overrides = self.Unprompted.shortcode_objects["overrides"]
 		can_set = True
-		
+
 		if (content is None or len(content) < 1): return ""
 
-		key = self.Unprompted.parse_alt_tags(pargs[0],context)
+		key = self.Unprompted.parse_alt_tags(pargs[0], context)
 
 		self.Unprompted.is_var_deprecated(key)
 
@@ -31,14 +31,14 @@ class Shortcode():
 			if key in self.Unprompted.shortcode_user_vars:
 				# Check if this var already holds a valid value, if not we will set it
 				if "_choices" in kwargs:
-					if self.Unprompted.shortcode_user_vars[key] in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter): can_set = False
+					if str(self.Unprompted.shortcode_user_vars[key]) in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter): can_set = False
 				else: can_set = False
 		elif "_choices" in kwargs:
 			if str(content) not in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter): can_set = False
 
 		if can_set:
-			if ("_append" in pargs): self.Unprompted.shortcode_user_vars[key] += content
-			elif ("_prepend" in pargs): self.Unprompted.shortcode_user_vars[key] = content + self.Unprompted.shortcode_user_vars[key]
+			if "_append" in pargs and key in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars[key] += content
+			elif "_prepend" in pargs and key in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars[key] = content + self.Unprompted.shortcode_user_vars[key]
 			else: self.Unprompted.shortcode_user_vars[key] = content
 
 			self.log.debug(f"Setting {key} to {self.Unprompted.shortcode_user_vars[key]}")
@@ -49,7 +49,7 @@ class Shortcode():
 
 		if "_external" in kwargs:
 			import json
-			filepath = self.Unprompted.parse_filepath(helpers.str_with_ext(kwargs["_external"]),root=self.Unprompted.base_dir,must_exist=False)
+			filepath = self.Unprompted.parse_filepath(helpers.str_with_ext(kwargs["_external"]), root=self.Unprompted.base_dir, must_exist=False)
 
 			# We load the file twice so that we can prepare the full data to send with json.dump
 			json_obj = helpers.create_load_json(filepath, encoding=self.Unprompted.Config.formats.default_encoding)

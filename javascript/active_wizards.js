@@ -36,6 +36,7 @@
 		gradioApp().querySelectorAll(".unprompted-accordion").forEach(function(accordion)
 		{
 			if (unprompted_accordions.has(accordion)) return;
+
 			accordion.querySelectorAll(".wizard-autoinclude input").forEach(function(checkbox)
 			{
 				checkbox.addEventListener("change", function()
@@ -43,6 +44,10 @@
 					update_active_unit_count(accordion);
 				});
 			});
+
+			// Perform count on startup
+			update_active_unit_count(accordion);
+
 			unprompted_accordions.add(accordion);
 		});
 	});

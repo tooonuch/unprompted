@@ -1,13 +1,10 @@
+import gradio as gr
+
+
 class Shortcode():
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Runs an img2img task inside of an [after] block."
-
-		# using a counter to keep track of the current image index as something isn't working quite
-		# right with getting the image index from the shortcode_user_vars
-		# this also helps with grid detection as well
-		self.counter = -1  # start at -1 so that the first image is 0 when we iterate
-		self.image_array = []
 
 		# using a counter to keep track of the current image index as something isn't working quite
 		# right with getting the image index from the shortcode_user_vars
@@ -27,14 +24,9 @@ class Shortcode():
 
 		# temporary bypass alwayson scripts to ensure vanilla img2img task
 		temp_alwayson = None
+		temp_builtin = None
+		temp_selectable = None
 		self.Unprompted.is_enabled = False
-		try:
-			temp_alwayson = self.Unprompted.shortcode_user_vars["scripts"].alwayson_scripts.copy()
-			self.Unprompted.shortcode_user_vars["scripts"].alwayson_scripts.clear()
-			if self.Unprompted.webui == "forge":
-				self.Unprompted.shortcode_user_vars["alwayson_scripts"].clear()
-		except:
-			pass
 
 		# Synchronize any changes from user vars
 		if "no_sync" not in pargs:
@@ -44,11 +36,6 @@ class Shortcode():
 		init_mask = None
 		if "init_mask" in self.Unprompted.shortcode_user_vars: init_mask = self.Unprompted.shortcode_user_vars["init_mask"]
 		elif "init_mask_inpaint" in self.Unprompted.shortcode_user_vars: init_mask = self.Unprompted.shortcode_user_vars["init_mask_inpaint"]
-
-		if "img2img_init_image" in self.Unprompted.shortcode_user_vars:
-			init_imgs = [self.Unprompted.shortcode_user_vars["img2img_init_image"]]
-		else:
-			init_imgs = self.Unprompted.shortcode_user_vars["init_images"]  # [len(self.Unprompted.shortcode_user_vars["init_images"]) - 1]
 
 		init_img_with_mask = self.Unprompted.shortcode_user_vars["init_img_with_mask"] if "init_img_with_mask" in self.Unprompted.shortcode_user_vars else None
 
@@ -79,15 +66,13 @@ class Shortcode():
 			temp_gr_request = lambda: None
 			temp_gr_request.username = "unprompted"
 
-			# subtract the real_first_image_index to get the correct zero based index of the prompt for the first image
-			prompt = self.Unprompted.after_processed.all_prompts[self.counter]
-			negative_prompt = self.Unprompted.after_processed.all_negative_prompts[self.counter]
+			if self.counter == 0:
+				prompt = self.Unprompted.shortcode_user_vars["prompt"]
+				negative_prompt = self.Unprompted.shortcode_user_vars["negative_prompt"]
+			else:
+				prompt = self.Unprompted.after_processed.all_prompts[self.counter]
+				negative_prompt = self.Unprompted.after_processed.all_negative_prompts[self.counter]
 
-			image = self.image_array[self.counter]
-
-			# subtract the real_first_image_index to get the correct zero based index of the prompt for the first image
-			prompt = self.Unprompted.after_processed.all_prompts[self.counter]
-			negative_prompt = self.Unprompted.after_processed.all_negative_prompts[self.counter]
 			image = self.image_array[self.counter]
 
 			# if the ratio is set to 0 then use the width and height, otherwise use the ratio
@@ -103,12 +88,11 @@ class Shortcode():
 			if self.Unprompted.webui == "forge":
 				img2img_func = modules.img2img.img2img_function
 			else:
-				img2img_func = modules.img2img.img2img
-
-			# img2img_function(id_task: str, mode: int, prompt: str, negative_prompt: str, prompt_styles, init_img, sketch, init_img_with_mask, inpaint_color_sketch, inpaint_color_sketch_orig, init_img_inpaint, init_mask_inpaint, steps: int, sampler_name: str, mask_blur: int, mask_alpha: float, inpainting_fill: int, n_iter: int, batch_size: int, cfg_scale: float, image_cfg_scale: float, denoising_strength: float, selected_scale_tab: int, height: int, width: int, scale_by: float, resize_mode: int, inpaint_full_res: bool, inpaint_full_res_padding: int, inpainting_mask_invert: int, img2img_batch_input_dir: str, img2img_batch_output_dir: str, img2img_batch_inpaint_mask_dir: str, override_settings_texts, img2img_batch_use_png_info: bool, img2img_batch_png_info_props: list, img2img_batch_png_info_dir: str, request: gr.Request, *args)
+				img2img_func = self.img2img_patched
 
 			img2img_result = img2img_func(
 			    "unprompted_img2img",  #id_task
+			    temp_gr_request,  # gr.request
 			    int(self.Unprompted.shortcode_user_vars["mode"]) if "mode" in self.Unprompted.shortcode_user_vars else 0,  #p.mode
 			    prompt,
 			    negative_prompt,
@@ -120,8 +104,6 @@ class Shortcode():
 			    None,  # inpaint_color_sketch_orig
 			    image,  # p.init_img_inpaint
 			    init_mask,  # p.init_mask_inpaint
-			    self.Unprompted.shortcode_user_vars["steps"],
-			    self.Unprompted.shortcode_user_vars["sampler_name"],
 			    self.Unprompted.shortcode_user_vars["mask_blur"] if "mask_blur" in self.Unprompted.shortcode_user_vars else 0,  # p.mask_blur
 			    0.0,  #p.mask_alpha
 			    0,  # p.inpainting_fill
@@ -141,11 +123,10 @@ class Shortcode():
 			    "",  #p.batch_input_directory
 			    "",  #p.batch_output_directory
 			    "",  #p.img2img_batch_inpaint_mask_dir
-			    "",  # override_settings_texts
+			    [],  # override_settings_texts
 			    self.Unprompted.shortcode_user_vars["img2img_batch_use_png_info"] if "img2img_batch_use_png_info" in self.Unprompted.shortcode_user_vars else 0,  # img2img_batch_use_png_info
 			    [],  # img2img_batch_png_info_props,
 			    "",  # img2img_batch_png_info_dir
-			    temp_gr_request,
 			    *self.Unprompted.main_p.script_args)
 
 			# Get the image stored in the first index
@@ -155,11 +136,6 @@ class Shortcode():
 			self.log.exception("Exception while running the img2img task")
 			did_error = True
 
-		# Re-enable alwayson scripts
-		if temp_alwayson:
-			self.Unprompted.shortcode_user_vars["scripts"].alwayson_scripts = temp_alwayson
-			if self.Unprompted.webui == "forge":
-				self.Unprompted.shortcode_user_vars["alwayson_scripts"] = temp_alwayson
 		self.Unprompted.is_enabled = True
 
 		try:
@@ -180,10 +156,116 @@ class Shortcode():
 			self.Unprompted.shortcode_user_vars["init_images"] = self.Unprompted.after_processed.images
 		return ""
 
-	def after(self, p=None, processed=None):
-		self.counter = -1  # reset the counter for the next run
-		self.image_array = []  # this array holds the whole images, make sure to clear it after the run
-		return ""
+	def img2img_patched(self, id_task: str, request: gr.Request, mode: int, prompt: str, negative_prompt: str, prompt_styles, init_img, sketch, init_img_with_mask, inpaint_color_sketch, inpaint_color_sketch_orig, init_img_inpaint, init_mask_inpaint, mask_blur: int, mask_alpha: float, inpainting_fill: int, n_iter: int, batch_size: int, cfg_scale: float, image_cfg_scale: float, denoising_strength: float, selected_scale_tab: int, height: int, width: int, scale_by: float, resize_mode: int, inpaint_full_res: bool, inpaint_full_res_padding: int, inpainting_mask_invert: int, img2img_batch_input_dir: str, img2img_batch_output_dir: str, img2img_batch_inpaint_mask_dir: str, override_settings_texts, img2img_batch_use_png_info: bool, img2img_batch_png_info_props: list, img2img_batch_png_info_dir: str, *args):
+
+		import numpy as np
+		from PIL import Image, ImageFilter, ImageEnhance, UnidentifiedImageError
+		import gradio as gr
+
+		from modules import images
+		from modules.infotext_utils import create_override_settings_dict
+		from modules.processing import Processed, StableDiffusionProcessingImg2Img, process_images
+		from modules.shared import opts
+		import modules.shared as shared
+		import modules.processing as processing
+		from modules.ui import plaintext_to_html
+		import modules.scripts
+		from contextlib import closing
+
+		override_settings = create_override_settings_dict(override_settings_texts)
+
+		if mode == 0:  # img2img
+			image = init_img
+			mask = None
+		elif mode == 1:  # img2img sketch
+			image = sketch
+			mask = None
+		elif mode == 2:  # inpaint
+			image, mask = init_img_with_mask["image"], init_img_with_mask["mask"]
+			mask = processing.create_binary_mask(mask)
+		elif mode == 3:  # inpaint sketch
+			image = inpaint_color_sketch
+			orig = inpaint_color_sketch_orig or inpaint_color_sketch
+			pred = np.any(np.array(image) != np.array(orig), axis=-1)
+			mask = Image.fromarray(pred.astype(np.uint8) * 255, "L")
+			mask = ImageEnhance.Brightness(mask).enhance(1 - mask_alpha / 100)
+			blur = ImageFilter.GaussianBlur(mask_blur)
+			image = Image.composite(image.filter(blur), orig, mask.filter(blur))
+		elif mode == 4:  # inpaint upload mask
+			image = init_img_inpaint
+			mask = init_mask_inpaint
+		else:
+			image = None
+			mask = None
+
+		image = images.fix_image(image)
+		mask = images.fix_image(mask)
+
+		if selected_scale_tab == 1:
+			assert image, "Can't scale by because no image is selected"
+
+			width = int(image.width * scale_by)
+			height = int(image.height * scale_by)
+
+		assert 0. <= denoising_strength <= 1., 'can only work with strength in [0.0, 1.0]'
+
+		p = StableDiffusionProcessingImg2Img(
+		    sd_model=shared.sd_model,
+		    outpath_samples=opts.outdir_samples or opts.outdir_img2img_samples,
+		    outpath_grids=opts.outdir_grids or opts.outdir_img2img_grids,
+		    prompt=prompt,
+		    negative_prompt=negative_prompt,
+		    styles=prompt_styles,
+		    batch_size=batch_size,
+		    n_iter=n_iter,
+		    cfg_scale=cfg_scale,
+		    width=width,
+		    height=height,
+		    init_images=[image],
+		    mask=mask,
+		    mask_blur=mask_blur,
+		    inpainting_fill=inpainting_fill,
+		    resize_mode=resize_mode,
+		    denoising_strength=denoising_strength,
+		    image_cfg_scale=image_cfg_scale,
+		    inpaint_full_res=inpaint_full_res,
+		    inpaint_full_res_padding=inpaint_full_res_padding,
+		    inpainting_mask_invert=inpainting_mask_invert,
+		    override_settings=override_settings,
+		)
+
+		p.scripts = self.Unprompted.shortcode_user_vars["scripts"].copy()  # modules.scripts.scripts_img2img
+		for script in p.scripts.alwayson_scripts:
+			if script.name not in [None, "extra options", "refiner", "sampler", "seed"]:
+				# Remove incompatible script
+				p.scripts.alwayson_scripts.remove(script)
+		p.script_args = args
+
+		# Patch in extra needed variables
+		p.sampler_name = self.Unprompted.shortcode_user_vars["sampler_name"]
+		p.scheduler = self.Unprompted.shortcode_user_vars["scheduler"]
+		p.steps = self.Unprompted.shortcode_user_vars["steps"]
+
+		p.user = request.username
+
+		if shared.opts.enable_console_prompts:
+			print(f"\nimg2img: {prompt}", file=shared.progress_print_out)
+
+		with closing(p):
+			processed = modules.scripts.scripts_img2img.run(p, *args)
+			if processed is None:
+				processed = process_images(p)
+
+		shared.total_tqdm.clear()
+
+		generation_info_js = processed.js()
+		if opts.samples_log_stdout:
+			print(generation_info_js)
+
+		if opts.do_not_show_images:
+			processed.images = []
+
+		return processed.images, generation_info_js, plaintext_to_html(processed.info), plaintext_to_html(processed.comments, classname="comments")
 
 	def after(self, p=None, processed=None):
 		self.counter = -1  # reset the counter for the next run

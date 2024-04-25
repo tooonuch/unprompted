@@ -1,7 +1,56 @@
 # Unprompted Announcements
 Stay informed on the latest Unprompted news and updates.
 
-<details><summary>Spice It Up - 6 March 2024</summary>
+<details><summary>Beefier Auto-Includes — 25 April 2024</summary>
+
+Hi folks,
+
+Unprompted v10.10.0 is now available! This patch brings several new features to the table:
+
+### 🪄 Auto-include destinations
+
+Previously, when you selected to "auto-include" a Wizard Template, it would output a `[call]` block to your prompt. Now, you can decide where exactly to direct the template's output:
+
+- The `prompt`, as before.
+- The `negative_prompt`.
+- Encapsulated into an `[after]` block.
+- Encapsulated into any variable name of your choosing.
+
+The last option is particularly interesting, as it allows you to take the output of one template and feed it into the input of another. It's sort of like connecting nodes in Comfy UI, but for a programmer's mindset.
+
+### Auto-include order
+
+Up until now, templates were processed in alphabetical order, e.g. Bodysnatcher would always execute before Magic Spice.
+
+You can now override this behavior with the numeric "order" field:
+
+![autoincludes]([base_dir]/images/posts/autoincludes.png)
+
+This gives you precise control over your workflow - just be aware that some templates may expect to fire at a certain step of the processing chain.
+
+In the event that two templates have the same numeric value, Unprompted will fallback to alphabetical order.
+
+### Automatic auto-includes
+
+Yep, we've got "autoautos" now. These are templates you want to auto-include by default when you launch the WebUI.
+
+In your config file, set up some JSON under `ui.wizard_template_autoincludes`, where each key is the template name and the value is the auto-include destination. For example: `{"Magic Spice v0.0.2":"prompt"}`.
+
+### New distillation template
+
+This patch introduces the Distillery template (formerly SDXL Lightning), which gives you a simple and fast way of toggling various distillation methods for Stable Diffusion.
+
+At the moment, it supports `SDXL-Lightning`, `SDXL-Turbo`, and even the newly-released `Hyper-SD`.
+
+Additionally, it will try to optimize your inference settings for each method and can even download the required LORA files from Civitai.
+
+---
+
+That's all for now! Thank you for your support.
+
+</details>
+
+<details><summary>Spice It Up — 6 March 2024</summary>
 
 Hi folks,
 

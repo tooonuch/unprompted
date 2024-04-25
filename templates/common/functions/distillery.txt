@@ -1,0 +1,83 @@
+[template name="Distillery v0.1.0"]
+![Preview]([base_dir]/distillery.png)
+
+Toggles support for the selected distillation method, allowing for fast inference. Note that some techniques may only be compatible with SDXL or SD 1.5.
+
+This template optimizes various inference settings for your convenience.
+
+**At the moment, you must manually install the [Hyper SD LORAs from Hugging Face](https://huggingface.co/ByteDance/Hyper-SD).** Lightning will grab its requirements from Civitai if necessary.
+[/template]
+
+[set distill_method _new _ui="dropdown" _choices="Hyper-SD|SDXL-Lightning|SDXL-Turbo"]Hyper-SD[/set]
+
+[set distill_steps _new _ui="dropdown" _choices="1|2|4|8"]8[/set]
+
+[if "distill_steps == 1 and distill_method == 'SDXL-Lightning'"]
+	[log]SDXL-Lightning does not support 1-step distillation. Defaulting to 2 steps.[/log]
+	[sets distill_steps=2]
+[/if]
+
+[switch distill_steps]
+	[case 2][sets mid=391994][/case]
+	[case 4][sets mid=391997][/case]
+	[case 8][sets mid=391999][/case]
+[/switch]
+
+[set distill_steps_string][get distill_steps][/set]
+
+[set new_cfg _new _ui="slider" _label="New CFG Scale" _minimum=0 _maximum=30 _info="You typically want to set this to around half of your normal CFG, but it depends on the checkpoint." _step=0.5]2[/set]
+
+[set distill_strength _new _ui="slider" _label="LORA Strength" _minimum=0 _maximum=1 _step=0.1 _info="Adjusts weight, steps, and CFG accordingly."]0.8[/set]
+
+[if "distill_strength != 1.0"]
+	[set new_cfg _append][eval][get new_cfg] / [get distill_strength] / 4[/eval][/set]
+	[set distill_steps _append][cast int][eval][get distill_steps] / [get distill_strength] / 4[/eval][/cast][/set]
+[/if]
+
+[set do_distill_lora _new _ui="checkbox" _label="Use LORA" _info="Some models have the LORA pre-baked, in which case you should disable this."]1[/set]
+
+[set do_distill_scheduler _new _ui="checkbox" _label="Use Scheduler" _info="Use the SGM Uniform scheduler for distillation."]1[/set]
+
+[set lora_filename _new _label="LORA Filename Pattern" _info="Leave blank for default name"]
+	[if "distill_steps == 1"]
+		[set step_string]step[/set]
+	[/if]
+	[else]
+		[set step_string]steps[/set]
+	[/else]
+	[switch distill_method]
+		[case "SDXL-Lightning"]
+			sdxl_lightning_[get distill_steps_string][get step_string]_lora
+		[/case]
+		[case "Hyper-SD"]
+			[if sd_base="sdxl"]
+				Hyper-SDXL-[get distill_steps_string][get step_string]-lora
+			[/if]
+			[else]
+				Hyper-SD15-[get distill_steps_string][get step_string]-lora
+			[/else]
+		[/case]
+		[case "SDXL-Turbo"]
+			sd_xl_turbo_lora_v1
+		[/case]
+	[/switch]
+[/set]
+
+[if do_distill_scheduler]
+	[sets scheduler="SGM Uniform"]
+[/if]
+
+[sets cfg_scale="{get new_cfg}" steps="{get distill_steps}"]
+[if do_distill_lora]
+	[switch distill_method]
+		[case "Hyper-SD"]
+			[civitai _weight="distill_strength" _file="lora_filename" _id=350450 _mvid="mid"]
+		[/case]
+		[case "SDXL-Lightning"]
+			[civitai _weight="distill_strength" _file="lora_filename" _id=350450 _mvid="mid"]
+		[/case]
+		[case "SDXL-Turbo"]
+			[civitai _weight="distill_strength" _file="lora_filename" _id=215485 _mvid=242807]
+		[/case]
+	[/switch]
+[/if]

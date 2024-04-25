@@ -3,7 +3,33 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>10.9.0 - 19 April 2024</summary>
+<details open><summary>10.10.0 - 25 April 2024</summary>
+
+### Added
+- Wizard Autoincludes can now be sent to the `prompt`, `negative_prompt`, an `after` block, or set to a custom variable of your choosing
+- You can now specify the execution order for your Wizard Autoincludes, overriding the default alphabetical order
+- New settings `Config.ui.wizard_template_autoincludes` and `Config.ui.wizard_shortcode_autoincludes`: Enable certain templates/shortcodes on UI startup (these are dictionaries, where each key is the template name and the value is the autoinclude destination e.g. `{"Magic Spice v0.0.2":"prompt"}`)
+- Distillery v0.1.0 template: Now supports the new Hyper-SD technique
+
+### Changed
+- Renamed the SDXL Lightning template to Distillery, as it will now support various model distillation methods moving forward
+- The `name` var in Wizard Template Auto-includes has been changed to `template_name`
+- Improved Wizard Template field reader logic
+- The default value of `Config.ui.wizard_prepends` changed to False
+- The autoinclude checkbox no longer writes to the WebUI's `ui-config.json` file (though the entries are not retroactively removed)
+- Distillery v0.1.0: Changed default values of `new_cfg` and `distill_strength`
+
+### Fixed
+- `[img2img]`: Updated for compatibility with WebUI 1.9.0 by creating a patched version of the standard `img2img()` method
+- `[img2img]`: Fixed issue related to reading the `prompt` and `negative_prompt` variables on batch index #1
+- `[set]`: Attempting to `_append` or `_prepend` to a variable that doesn't exist will no longer throw an error
+- `[set]`: Fixed an issue with `_choices` and `_new` when the existing value was cast to an int
+- Fixed an issue with batch processing when initial seed set to -1 producing images with non-sequential seeds
+- Fixed an issue that could cause random seeds to become predictable
+
+</details>
+
+<details><summary>10.9.0 - 19 April 2024</summary>
 
 ### Added
 - New free template SDXL Lightning: Allows you to easily enable use of Lightning LORAs

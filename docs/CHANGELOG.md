@@ -3,7 +3,25 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>10.10.0 - 25 April 2024</summary>
+<details open><summary>10.11.0 - 30 April 2024</summary>
+
+### Added
+- Buttons for clearing all shortcode and template auto-includes
+- Wizard dropdown menus now have a visual indicator for items that are being auto-included
+- Wizard Templates now support `destination` kwarg for the template block, which lets you specify the auto-include destination (defaults to "prompt")
+- Wizard Shortcodes now support `self.destination` in the `__init__()` block
+- Similarly, Wizard Templates and Shortcodes support the `order` kwarg and `self.order` to override the default value of 1
+
+### Changed
+- `[zoom_enhance]`: The default value of `upscale_width` and `upscale_height` is now -1, which will be processed as 512px for SD 1.5 and 1024px for SDXL
+
+### Fixed
+- `[zoom_enhance]`: Updated for compatibility with WebUI v1.9.0
+- Syntax processing issue related to Generate Shortcode button
+
+</details>
+
+<details><summary>10.10.0 - 25 April 2024</summary>
 
 ### Added
 - Wizard Autoincludes can now be sent to the `prompt`, `negative_prompt`, an `after` block, or set to a custom variable of your choosing

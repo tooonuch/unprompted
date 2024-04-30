@@ -2,8 +2,7 @@ class Shortcode():
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Applies color correction to a resulting image."
-		self.wizard_prepend = Unprompted.Config.syntax.tag_start + "after" + Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + "color_correct"
-		self.wizard_append = Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + Unprompted.Config.syntax.tag_close + "after" + Unprompted.Config.syntax.tag_end
+		self.destination = "after"
 
 	def run_atomic(self, pargs, kwargs, context):
 		from PIL import Image
@@ -35,10 +34,11 @@ class Shortcode():
 		batch_real_index = self.Unprompted.shortcode_user_vars["batch_real_index"] if "batch_real_index" in self.Unprompted.shortcode_user_vars else 0
 		if "starting_image" in kwargs: starting_image = Image.open(self.Unprompted.parse_advanced(kwargs["starting_image"]))
 		else:
-			if hasattr(self.Unprompted.main_p,"init_images"):
+			if hasattr(self.Unprompted.main_p, "init_images"):
 				starting_image = self.Unprompted.main_p.init_images[batch_real_index]
 			# for txt2img
-			else: starting_image = self.Unprompted.current_image()
+			else:
+				starting_image = self.Unprompted.current_image()
 
 		orig_image = image_to_fix.copy()
 		if "image_mask" in self.Unprompted.shortcode_user_vars and self.Unprompted.shortcode_user_vars["image_mask"]:
@@ -89,7 +89,6 @@ class Shortcode():
 		if blend_lum:
 			fixed_image = blendLayers(fixed_image, orig_image, BlendType.LUMINOSITY)
 
-		
 		if debug: fixed_image.save("color_correct_fixed_image.png")
 
 		if strength < 1.0:
@@ -102,8 +101,8 @@ class Shortcode():
 		self.Unprompted.after_processed.images[batch_real_index].paste(orig_image, (0, 0), mask)
 
 		# self.Unprompted.after_processed.images[0] = fixed_image
-	
+
 	def ui(self, gr):
 		gr.Dropdown(label="Method 🡢 method", choices=["hm", "mvgd", "mkl", "hm-mvgd-hm", "hm-mkl-hms"], value="mkl", interactive=True)
-		gr.Checkbox(label="Blend luminosity? 🡢 blend_lum",value=False)
-		gr.Checkbox(label="Debug mode 🡢 debug",value=False)
+		gr.Checkbox(label="Blend luminosity? 🡢 blend_lum", value=False)
+		gr.Checkbox(label="Debug mode 🡢 debug", value=False)

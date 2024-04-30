@@ -11,9 +11,7 @@ class Shortcode():
 
 		self.fs_face_path = None
 
-		self.wizard_prepend = f"{Unprompted.Config.syntax.tag_start}after{Unprompted.Config.syntax.tag_end}{Unprompted.Config.syntax.tag_start}faceswap"
-
-		self.wizard_append = Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + Unprompted.Config.syntax.tag_close + "after" + Unprompted.Config.syntax.tag_end
+		self.destination = "after"
 
 	def run_atomic(self, pargs, kwargs, context):
 		import lib_unprompted.helpers as helpers
@@ -520,4 +518,4 @@ class Shortcode():
 		gr.Textbox(label="Path to save the exported embedding 🡢 embedding_path", placeholder="unprompted/user/faces/blended_faces.safetensors", interactive=True)
 		gr.Slider(label="Visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01)
 		gr.Checkbox(label="Prefer GPU 🡢 prefer_gpu", value=True, interactive=True)
-		gr.Dropdown(label="Unload pipeline parts from cache 🡢 unload", choices=["all", "face", "model","analyser"], multiselect=True, interactive=True, info="You can release some or all of the pipeline parts from your cache after inference. Useful for low-memory devices.")
+		gr.Dropdown(label="Unload pipeline parts from cache 🡢 unload", choices=["all", "face", "model", "analyser"], multiselect=True, interactive=True, info="You can release some or all of the pipeline parts from your cache after inference. Useful for low-memory devices.")

@@ -12,8 +12,7 @@ class Shortcode():
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Runs a txt2img task inside of an [after] block."
-		self.wizard_prepend = f"{Unprompted.Config.syntax.tag_start}after{Unprompted.Config.syntax.tag_end}{Unprompted.Config.syntax.tag_start}txt2img"
-		self.wizard_append = Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + Unprompted.Config.syntax.tag_close + "after" + Unprompted.Config.syntax.tag_end
+		self.destination = "after"
 
 	def run_atomic(self, pargs, kwargs, context):
 		# Temporarily bypass other scripts

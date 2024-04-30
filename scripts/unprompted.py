@@ -104,6 +104,20 @@ def wizard_prep_event_listeners(obj):
 			wizard_set_event_listener(child)
 
 
+def wizard_prep_destination(autoinclude_mode, order=0):
+	prefix = ""
+	affix = ""
+	# Support variable encapsulation
+	if autoinclude_mode != "prompt":
+		if autoinclude_mode == "after":
+			prefix = f"{Unprompted.Config.syntax.tag_start}after {order}{Unprompted.Config.syntax.tag_end}"
+			affix = f"{Unprompted.Config.syntax.tag_start}{Unprompted.Config.syntax.tag_close}after{Unprompted.Config.syntax.tag_end}"
+		else:
+			prefix = f"{Unprompted.Config.syntax.tag_start}set {autoinclude_mode} _append{Unprompted.Config.syntax.tag_end}"
+			affix = f"{Unprompted.Config.syntax.tag_start}{Unprompted.Config.syntax.tag_close}set{Unprompted.Config.syntax.tag_end}"
+	return [prefix, affix]
+
+
 def wizard_generate_template(option, is_img2img, html_safe=True, prepend="", append=""):
 	filepath = os.path.relpath(Unprompted.wizard_template_files[option], f"{base_dir}/{Unprompted.Config.template_directory}")
 	# Remove file extension
@@ -172,7 +186,7 @@ def wizard_generate_shortcode(option, is_img2img, html_safe=True, prepend="", ap
 				elif gr_obj.label == "Content":
 					block_content += gr_obj.value
 				else:
-					if block_name == "label" or block_name == "markdown" or gr_obj.value is None or gr_obj.value == "": continue  # Skip empty fields
+					if block_name == "label" or block_name == "markdown" or gr_obj.value is None or gr_obj.value == "" or Unprompted.Config.syntax.wizard_delimiter not in gr_obj.label: continue  # Skip empty fields
 
 					# Enable support for multiselect dropdowns
 					if type(gr_obj.value) == list:
@@ -394,6 +408,8 @@ class Scripts(scripts.Script):
 
 						def handler(keyword, pargs, kwargs, context, content):
 							if "name" in kwargs: self.dropdown_item_name = kwargs["name"]
+							if "destination" in kwargs: self.dropdown_item_destination = kwargs["destination"]
+							if "order" in kwargs: self.dropdown_item_order = kwargs["order"]
 							# Fix content formatting for markdown
 							content = content.replace("\\r\\n", "<br>") + "<br><br>"
 							gr.Label(label="Options", value=f"{self.dropdown_item_name}")
@@ -441,14 +457,16 @@ class Scripts(scripts.Script):
 
 								def wizard_add_template(show_me=False):
 									self.dropdown_item_name = filename
+									self.dropdown_item_destination = "prompt"
+									self.dropdown_item_order = 1
 									with gr.Group(visible=show_me) as self.filtered_templates[filename]:
 										# Render the text file's UI with special parser object
 										wizard_shortcode_parser.parse(file.read())
 										# Auto-include is always the last element
 										with gr.Row(equal_height=True, elem_classes=["wizard-autoinclude-row"], variant="panel"):
 											obj = gr.Checkbox(label=f"🪄 Auto-include {self.dropdown_item_name} in:", value=hasattr(Unprompted.Config.ui.wizard_template_autoincludes, self.dropdown_item_name), elem_classes=["wizard-autoinclude", mode_string], scale=8)
-											gr.Dropdown(value="prompt", choices=["prompt", "negative_prompt", "after", "your_var"], allow_custom_value=True, elem_classes=["autoinclude-mode"], show_label=False, scale=4)
-											gr.Number(show_label=False, value=1, minimum=1, elem_classes=["autoinclude-order"], scale=3, min_width=1)
+											gr.Dropdown(value=self.dropdown_item_destination, choices=["prompt", "negative_prompt", "after", "your_var"], allow_custom_value=True, elem_classes=["autoinclude-mode"], show_label=False, scale=4)
+											gr.Number(show_label=False, value=self.dropdown_item_order, minimum=1, elem_classes=["autoinclude-order"], scale=3, min_width=1)
 											setattr(obj, "do_not_save_to_config", True)
 										# Add event listeners
 										wizard_prep_event_listeners(self.filtered_templates[filename])
@@ -498,8 +516,10 @@ class Scripts(scripts.Script):
 												# Auto-include is always the last element
 												with gr.Row(equal_height=True, elem_classes=["wizard-autoinclude-row"], variant="panel"):
 													obj = gr.Checkbox(label=f"🪄 Auto-include [{key}] in:", value=hasattr(Unprompted.Config.ui.wizard_shortcode_autoincludes, key), elem_classes=["wizard-autoinclude", mode_string], scale=8)
-													gr.Dropdown(value="prompt", choices=["prompt", "negative_prompt", "after", "your_var"], allow_custom_value=True, scale=4, elem_classes=["autoinclude-mode"], show_label=False)
-													gr.Number(show_label=False, value=1, minimum=1, elem_classes=["autoinclude-order"], scale=2, min_width=1)
+													destination = Unprompted.shortcode_objects[key].destination if hasattr(Unprompted.shortcode_objects[key], "destination") else "prompt"
+													gr.Dropdown(value=destination, choices=["prompt", "negative_prompt", "after", "your_var"], allow_custom_value=True, scale=4, elem_classes=["autoinclude-mode"], show_label=False)
+													order = int(Unprompted.shortcode_objects[key].order) if hasattr(Unprompted.shortcode_objects[key], "order") else 1
+													gr.Number(show_label=False, value=order, minimum=1, elem_classes=["autoinclude-order"], scale=2, min_width=1)
 													setattr(obj, "do_not_save_to_config", True)
 
 												# Add event listeners
@@ -525,11 +545,12 @@ class Scripts(scripts.Script):
 								return wizard_populate_shortcodes(self.shortcodes_region[int(is_img2img)])
 
 							if Unprompted.Config.ui.wizard_templates:
-								with gr.Tab("Templates"):
+								with gr.Tab("Templates", elem_id="wizard-templates"):
 									with gr.Row():
-										self.templates_dropdown[int(is_img2img)] = gr.Dropdown(choices=[], label="Select template:", type="index", info="These are your GUI templates - you can think of them like custom scripts, except you can run an unlimited number of them at the same time.")
+										self.templates_dropdown[int(is_img2img)] = gr.Dropdown(choices=[], label="Select template:", elem_id="wizard-dropdown", type="index", info="These are your GUI templates - you can think of them like custom scripts, except you can run an unlimited number of them at the same time.")
 										templates_refresh = ToolButton(value='\U0001f504', elem_id=f"templates-refresh")
 										templates_refresh.click(fn=wizard_refresh_templates)  # , outputs=self.templates_dropdown[int(is_img2img)]
+										ToolButton(value="🗑️", elem_id=f"templates-clear", tooltip="Clear all template auto-includes")
 
 									self.templates_region[int(is_img2img)] = gr.Blocks()
 									wizard_populate_templates(self.templates_region[int(is_img2img)], True)
@@ -539,12 +560,13 @@ class Scripts(scripts.Script):
 									wizard_template_btn = gr.Button(value="🧠 Generate Shortcode")
 
 							if Unprompted.Config.ui.wizard_shortcodes:
-								with gr.Tab("Shortcodes"):
+								with gr.Tab("Shortcodes", elem_id="wizard-shortcodes"):
 									shortcode_list = list(Unprompted.shortcode_objects.keys())
 									with gr.Row():
-										self.shortcodes_dropdown[int(is_img2img)] = gr.Dropdown(choices=shortcode_list, label="Select shortcode:", value=Unprompted.Config.ui.wizard_default_shortcode, info="GUI for setting up any shortcode in Unprompted. More engaging than reading the manual!")
-										shortcodes_refresh = ToolButton(value='\U0001f504', elemn_id=f"shortcodes-refresh")
+										self.shortcodes_dropdown[int(is_img2img)] = gr.Dropdown(choices=shortcode_list, elem_id="wizard-dropdown", label="Select shortcode:", value=Unprompted.Config.ui.wizard_default_shortcode, info="GUI for setting up any shortcode in Unprompted. More engaging than reading the manual!")
+										shortcodes_refresh = ToolButton(value='\U0001f504', elemn_id=f"shortcodes-refresh", tooltip="Refresh shortcode list (NOTE: Currently non-functional due to Gradio limitations.)")
 										shortcodes_refresh.click(fn=wizard_refresh_shortcodes)  # , outputs=self.shortcodes_dropdown[int(is_img2img)]
+										ToolButton(value="🗑️", elem_id=f"shortcodes-clear", tooltip="Clear all shortcode auto-includes")
 
 									self.shortcodes_region[int(is_img2img)] = gr.Blocks()
 									wizard_populate_shortcodes(self.shortcodes_region[int(is_img2img)], True)
@@ -671,14 +693,9 @@ class Scripts(scripts.Script):
 			if autoinclude_mode == "negative_prompt": prompt = Unprompted.original_negative_prompt
 			else:
 				prompt = Unprompted.original_prompt
-				# Support variable encapsulation
-				if autoinclude_mode != "prompt":
-					if autoinclude_mode == "after":
-						prefix = f"{Unprompted.Config.syntax.tag_start}after {order}{Unprompted.Config.syntax.tag_end}"
-						affix = f"{Unprompted.Config.syntax.tag_start}{Unprompted.Config.syntax.tag_close}after{Unprompted.Config.syntax.tag_end}"
-					else:
-						prefix = f"{Unprompted.Config.syntax.tag_start}set {autoinclude_mode} _append{Unprompted.Config.syntax.tag_end}"
-						affix = f"{Unprompted.Config.syntax.tag_start}{Unprompted.Config.syntax.tag_close}set{Unprompted.Config.syntax.tag_end}"
+				strings = wizard_prep_destination(autoinclude_mode, order)
+				prefix = strings[0]
+				affix = strings[1]
 
 			if tab == WizardModes.SHORTCODES:
 				fn = wizard_generate_shortcode

@@ -12,8 +12,7 @@ class Shortcode():
 		self.gpen_processor = None
 		self.gpen_cache_model = ""
 
-		self.wizard_prepend = f"{Unprompted.Config.syntax.tag_start}after{Unprompted.Config.syntax.tag_end}{Unprompted.Config.syntax.tag_start}restore_faces"
-		self.wizard_append = Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + Unprompted.Config.syntax.tag_close + "after" + Unprompted.Config.syntax.tag_end
+		self.destination = "after"
 
 		self.resample_methods = {}
 		self.resample_methods["Nearest Neighbor"] = cv2.INTER_NEAREST
@@ -30,20 +29,21 @@ class Shortcode():
 		methods = kwargs["method"] if "method" in kwargs else "gpen"
 		if self.Unprompted.Config.syntax.delimiter in methods: methods = methods.split(self.Unprompted.Config.syntax.delimiter)
 		else: methods = [methods]
-		
+
 		visibility = float(self.Unprompted.parse_advanced(kwargs["visibility"], context)) if "visibility" in kwargs else 1.0
 		resolution_preset = str(kwargs["resolution_preset"]) if "resolution_preset" in kwargs else "512"
 		unload = self.Unprompted.shortcode_var_is_true("unload", pargs, kwargs)
 
-		downscale_method = self.Unprompted.parse_arg("downscale_method","Bilinear")
+		downscale_method = self.Unprompted.parse_arg("downscale_method", "Bilinear")
 		downscale_method = self.resample_methods[downscale_method]
 
 		result = None
 
-		_image = self.Unprompted.parse_alt_tags(kwargs["image"],context) if "image" in kwargs else False
+		_image = self.Unprompted.parse_alt_tags(kwargs["image"], context) if "image" in kwargs else False
 		if _image:
 			this_image = Image.open(_image)
-		else: this_image = self.Unprompted.current_image()
+		else:
+			this_image = self.Unprompted.current_image()
 
 		for this_method in methods:
 			self.log.info(f"{this_method} face restoration starting...")
@@ -89,18 +89,18 @@ class Shortcode():
 				models_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}"
 				gpen_dir = f"{models_dir}/gpen/"
 
-				if args.model=="GPEN-BFR-512":
-					helpers.download_file(f"{gpen_dir}/{args.model}.pth","https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/GPEN-BFR-512.pth")
-				elif args.model=="GPEN-BFR-1024":
-					if not helpers.download_file(f"{gpen_dir}/{args.model}.pth","https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/GPEN-BFR-1024.pth"):
+				if args.model == "GPEN-BFR-512":
+					helpers.download_file(f"{gpen_dir}/{args.model}.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/GPEN-BFR-512.pth")
+				elif args.model == "GPEN-BFR-1024":
+					if not helpers.download_file(f"{gpen_dir}/{args.model}.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/GPEN-BFR-1024.pth"):
 						self.log.error("The download link for the 1024 model doesn't appear to work. Try installing it manually into your unprompted/models/gpen folder: https://cyberfile.me/644d")
-				elif args.model=="GPEN-BFR-2048":
-					helpers.download_file(f"{gpen_dir}/{args.model}.pth","https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/GPEN-BFR-2048.pth")
+				elif args.model == "GPEN-BFR-2048":
+					helpers.download_file(f"{gpen_dir}/{args.model}.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/GPEN-BFR-2048.pth")
 
 				# Additional dependencies
-				helpers.download_file(f"{gpen_dir}/ParseNet-latest.pth","https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/ParseNet-latest.pth")
-				helpers.download_file(f"{gpen_dir}/realesrnet_x2.pth","https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/realesrnet_x2.pth")
-				helpers.download_file(f"{gpen_dir}/RetinaFace-R50.pth","https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/RetinaFace-R50.pth")
+				helpers.download_file(f"{gpen_dir}/ParseNet-latest.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/ParseNet-latest.pth")
+				helpers.download_file(f"{gpen_dir}/realesrnet_x2.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/realesrnet_x2.pth")
+				helpers.download_file(f"{gpen_dir}/RetinaFace-R50.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/RetinaFace-R50.pth")
 
 				if unload or not self.gpen_processor or self.gpen_cache_model != resolution_preset:
 					self.log.info("Loading FaceEnhancement object...")
@@ -128,7 +128,7 @@ class Shortcode():
 						result = Image.fromarray(result)
 
 						break
-			
+
 			self.log.info(f"{this_method} face restoration completed.")
 
 		# Append to output window

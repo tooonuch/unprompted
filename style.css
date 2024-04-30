@@ -163,3 +163,18 @@ details[open]
 	padding-left: 15px;
 	position: relative;
 }
+
+#wizard-dropdown li.autoincluded, #wizard-dropdown input.autoincluded
+{
+	color: var(--checkbox-background-color-selected);
+}
+#wizard-dropdown li.autoincluded::before, #wizard-dropdown div:has(> input.autoincluded)::before
+{
+	content: "🪄";
+	display:inline-block;
+}
+#wizard-dropdown li:not(.active)::before
+{
+	position:absolute;
+	left:-2px;
+}

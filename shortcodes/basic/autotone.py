@@ -3,7 +3,7 @@ class Shortcode():
 		self.Unprompted = Unprompted
 		self.description = "Adjusts the black point of the image to maximize contrast."
 
-		self.wizard_append = Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + Unprompted.Config.syntax.tag_close + "after" + Unprompted.Config.syntax.tag_end
+		self.destination = "after"
 
 	def run_atomic(self, pargs, kwargs, context):
 		from PIL import Image, ImageOps, ImageEnhance

@@ -22,10 +22,6 @@ class Shortcode():
 
 		did_error = False
 
-		# temporary bypass alwayson scripts to ensure vanilla img2img task
-		temp_alwayson = None
-		temp_builtin = None
-		temp_selectable = None
 		self.Unprompted.is_enabled = False
 
 		# Synchronize any changes from user vars
@@ -234,9 +230,13 @@ class Shortcode():
 		    override_settings=override_settings,
 		)
 
-		p.scripts = self.Unprompted.shortcode_user_vars["scripts"].copy()  # modules.scripts.scripts_img2img
+		if self.Unprompted.shortcode_user_vars["scripts"]:
+			p.scripts = self.Unprompted.shortcode_user_vars["scripts"].copy()  # modules.scripts.scripts_img2img
+		else:
+			p.scripts = modules.scripts.scripts_img2img
+
 		for script in p.scripts.alwayson_scripts:
-			if script.name not in [None, "extra options", "refiner", "sampler", "seed"]:
+			if script.name not in [None, "extra options", "refiner", "sampler"]:  # , "seed"
 				# Remove incompatible script
 				p.scripts.alwayson_scripts.remove(script)
 		p.script_args = args

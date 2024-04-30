@@ -1,4 +1,4 @@
-[template name="Distillery v0.1.0"]
+[template name="Distillery v0.1.0" order=100]
 ![Preview]([base_dir]/distillery.png)
 
 Toggles support for the selected distillation method, allowing for fast inference. Note that some techniques may only be compatible with SDXL or SD 1.5.

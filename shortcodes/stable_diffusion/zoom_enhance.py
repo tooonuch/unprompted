@@ -13,14 +13,13 @@ class Shortcode():
 		import lib_unprompted.helpers as helpers
 		self.Unprompted = Unprompted
 		self.description = "Upscales a selected portion of the image. ENHANCE!"
+		self.destination = "after"
 		self.is_fixing = False
-		self.wizard_prepend = f"{Unprompted.Config.syntax.tag_start}after{Unprompted.Config.syntax.tag_end}{Unprompted.Config.syntax.tag_start}zoom_enhance"
 
 		# This saves images that are processed outside of an [after] block
 		# We append them to p.processed once img2img is done
 		self.images_queued = []
 
-		self.wizard_append = Unprompted.Config.syntax.tag_end + Unprompted.Config.syntax.tag_start + Unprompted.Config.syntax.tag_close + "after" + Unprompted.Config.syntax.tag_end
 		self.resample_methods = helpers.pil_resampling_dict
 
 	def run_atomic(self, pargs, kwargs, context):
@@ -40,10 +39,10 @@ class Shortcode():
 		self.Unprompted.main_p.batch_index = 0
 
 		try:
-			if sd_models.model_data.sd_model and sd_models.model_data.sd_model.is_sdxl: default_mask_size = 1024
+			if self.Unprompted.short_code_user_vars["sd_base"] == "sdxl": default_mask_size = 1024
 			else: default_mask_size = 512
 		except:  # temporary workaround for sd.next not supporting these variables
-			default_mask_size = 512
+			default_mask_size = 1024
 			pass
 
 		test = int(float(self.Unprompted.parse_advanced(kwargs["test"], context))) if "test" in kwargs else 0
@@ -53,8 +52,11 @@ class Shortcode():
 		hires_size_max = int(float(self.Unprompted.parse_advanced(kwargs["hires_size_max"], context))) if "hires_size_max" in kwargs else 1024
 		upscale_min = float(self.Unprompted.parse_advanced(kwargs["upscale_min"], context)) if "upscale_min" in kwargs else 0.03
 		# (upscale_width + upscale_height) / 1024
-		upscale_min = upscale_min * (512**2)  # Scale the minimum area up depending on the canvas size
+		upscale_min = upscale_min * (default_mask_size**2)  # Scale the minimum area up depending on the canvas size
 		bypass_adaptive_hires = self.Unprompted.parse_arg("bypass_adaptive_hires", False)
+
+		if upscale_width == -1: upscale_width = default_mask_size
+		if upscale_height == -1: upscale_height = default_mask_size
 
 		self.log.debug(f"The upscale_min for this image is {upscale_min}")
 
@@ -506,8 +508,8 @@ class Shortcode():
 			gr.Dropdown(label="Upscale method 🡢 upscale_method", value="Nearest Neighbor", choices=list(self.resample_methods.keys()), interactive=True)
 			gr.Dropdown(label="Downscale method 🡢 downscale_method", value="Lanczos", choices=list(self.resample_methods.keys()), interactive=True)
 			gr.Number(label="Sharpen amount 🡢 sharpen_amount", value=1.0, interactive=True)
-			gr.Number(label="Upscale width 🡢 upscale_width", value=512, interactive=True)
-			gr.Number(label="Upscale height 🡢 upscale_height", value=512, interactive=True)
+			gr.Number(label="Upscale width 🡢 upscale_width", value=-1, interactive=True)
+			gr.Number(label="Upscale height 🡢 upscale_height", value=-1, interactive=True)
 			gr.Number(label="Hires size max 🡢 hires_size_max", info="This is a safety measure to prevent OOM errors.", value=1024, interactive=True)
 			gr.Checkbox(label="Bypass adaptive hires 🡢 bypass_adaptive_hires")
 		with gr.Accordion("🎨 Inference Settings", open=False):

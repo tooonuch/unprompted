@@ -3,7 +3,26 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>10.11.0 - 30 April 2024</summary>
+<details open><summary>10.12.0 - 2 May 2024</summary>
+
+### Added
+- New presets at `common/presets/dimensions`: Easily set your width and height to popular values, with support for both SD 1.5 and SDXL models
+- Magic Spice v0.0.3: Replaced `aspect_ratio` buttons with the new `common/presets/dimensions` file dropdown
+- Distillery v0.2.0: Implemented support for the new `Hyper-SD-CFG` method, which is now the default
+- Distillery v0.2.0: Can now download LORA files for `Hyper-SD` and `Hyper-SD-CFG` from Civitai
+- Distillery v0.2.0: Minor UI improvements
+- Magic Spice preset `booru_spice_v3`: Refined quality tags to improve prompt adherence
+- `[case]`: Now supports multiple pargs, e.g. you can use `[case "some_val" "another_val"]` and if either value matches your switch variable, it will process the `[case]` content
+- `[civitai]`: Now parses the `_id` kwarg as an advanced expression
+
+### Fixed
+- Fixed an issue with seed reproducibility
+- Fixed console warning about empty "Unprompted Negative Prompt"
+- Fixed multiple issues related to `wizard_generate_autoinclude()`
+
+</details>
+
+<details><summary>10.11.0 - 30 April 2024</summary>
 
 ### Added
 - Buttons for clearing all shortcode and template auto-includes
@@ -73,7 +92,7 @@ For more details on new features, please check the [Manual](./MANUAL.md).
 - `[gpt]`: Now supports `prefix` and `affix` kwargs to include extra strings in the returned result
 - `[gpt]`: Catch exception when there are issues with the `model` or `tokenizer`
 - `[replace]`: Now supports delimited values in `_from` and `_to` kwargs
-- Magic Spice preset `booru_spice_v2`: Updated syntax for better compatiblity with Animagine XL 3.1
+- Magic Spice preset `booru_spice_v2`: Updated syntax for better compatibility with Animagine XL 3.1
 - Magic Spice preset `photo_spice_v2`: Updated GPT model to SuperPrompt
 - Magic Spice preset `allspice_v2`: Updated GPT model to SuperPrompt
 - New config setting `Config.ui.wizard_prepends`: Determines whether the Wizard's autoincludes are prepended or appended to your prompt (defaults to true; prepend)
@@ -146,7 +165,7 @@ This update introduces global variables, several image processing shortcodes and
 
 ### Added
 - New shortcode `[resize]`: Resizes the image to the given dimensions, works with the SD image by default
-- `[resize]` can be toggled to peform a crop instead
+- `[resize]` can be toggled to perform a crop instead
 - New shortcode `[image_info]`: Returns various types of metadata about the image, including quality assessment via the pyiqa toolbox
 - New shortcode `[cast]`: Converts the content to a given datatype
 - New config setting `globals`: Allows you to create variables in key/value format that will be available to all templates and shortcodes

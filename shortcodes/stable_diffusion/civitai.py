@@ -45,7 +45,7 @@ class Shortcode():
 			mvid = True
 		elif "_id" in kwargs:
 			mid = True
-			url += f"/{kwargs['_id']}"
+			url += f"/{self.Unprompted.parse_arg('_id', '')}"
 
 		# Shorthand use with pargs
 		# e.g. [civitai lora "filename" 1.0 "search query"]

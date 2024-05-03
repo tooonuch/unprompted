@@ -1,4 +1,4 @@
-[template name="Magic Spice v0.0.2"]
+[template name="Magic Spice v0.0.3"]
 ![Preview]([base_dir]/magic_spice.png)
 This template elevates your prompts using techniques from Fooocus and elsewhere. It helps ensure high-quality images regardless of the simplicity of your prompt. **Some spices may yield NSFW terms due to GPT-2 prompt expansion.**
 
@@ -25,7 +25,7 @@ Optimizing for quality means that the model will try to generate the best possib
 
 [set style_preset _new _info="May download extra dependencies on first use." _ui="dropdown" _choices="none|{filelist '%BASE_DIR%/templates/common/presets/magic_spice/*.*' _basename _hide_ext}" _label="Choose Your Spice"]allspice_v2[/set]
 
-[set aspect_ratio _new _ui="radio" _choices="■ Square|↕️ Portrait|↔️ Landscape|Custom"]■ Square[/set]
+[set aspect_ratio _new _label="Aspect Ratio Preset" _ui="dropdown" _choices="none|{filelist '%BASE_DIR%/templates/common/presets/dimensions/*.*' _basename _hide_ext}"]square_1-1[/set]
 
 [wizard accordion _label="⚙️ Advanced Settings"]
 	[set inference_preset _new _info="Locks CFG scale, sampler method, etc. to recommended values" _label="Inference Preset" _ui="dropdown" _choices="none|{filelist '%BASE_DIR%/templates/common/presets/txt2img/*.*' _basename _hide_ext}"]none[/set]
@@ -48,31 +48,9 @@ Optimizing for quality means that the model will try to generate the best possib
 	[call "common/presets/txt2img/{get inference_preset}"]
 [/if]
 
-[if sd_base="sdxl"]
-	[switch aspect_ratio]
-		[case "■ Square"]
-			[sets width=1024 height=1024]
-		[/case]
-		[case "↕️ Portrait"]
-			[sets width=768 height=1344]
-		[/case]
-		[case "↔️ Landscape"]
-			[sets width=1344 height=768]
-		[/case]
-	[/switch]
-[/if][else]
-	[switch aspect_ratio]
-		[case "■ Square"]
-			[sets width=512 height=512]
-		[/case]
-		[case "↕️ Portrait"]
-			[sets width=512 height=768]
-		[/case]
-		[case "↔️ Landscape"]
-			[sets width=768 height=512]
-		[/case]
-	[/switch]
-[/else]
+[if "aspect_ratio != 'none'"]
+	[call "common/presets/dimensions/{get aspect_ratio}"]
+[/if]
 
 [if do_autotone]
 	[after][autotone][/after]

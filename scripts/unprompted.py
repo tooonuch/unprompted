@@ -663,9 +663,9 @@ class Scripts(scripts.Script):
 			Unprompted.log.debug(f"Synchronizing seed with WebUI: {p.seed}")
 			unprompted_seed = p.seed
 
-		#if unprompted_seed != -1:
-		#	import random
-		#	random.seed(unprompted_seed)
+		if unprompted_seed != -1:
+			import random
+			random.seed(unprompted_seed)
 
 		Unprompted.fix_hires_prompts = False
 		if hasattr(p, "hr_prompt"):
@@ -687,12 +687,14 @@ class Scripts(scripts.Script):
 			p.unprompted_original_prompt = Unprompted.original_prompt
 
 		def wizard_generate_autoinclude(tab, autoinclude_mode, idx, key, order, is_img2img):
+			prompt = ""
 			prefix = ""
 			affix = ""
 
-			if autoinclude_mode == "negative_prompt": prompt = Unprompted.original_negative_prompt
+			if autoinclude_mode == "negative_prompt":
+				prompt = Unprompted.original_negative_prompt
 			else:
-				prompt = Unprompted.original_prompt
+				if autoinclude_mode == "prompt": prompt = Unprompted.original_prompt
 				strings = wizard_prep_destination(autoinclude_mode, order)
 				prefix = strings[0]
 				affix = strings[1]
@@ -705,16 +707,20 @@ class Scripts(scripts.Script):
 				option = idx
 
 			if Unprompted.Config.ui.wizard_prepends:
-				Unprompted.original_prompt = fn(option, is_img2img, False, prefix, prompt + affix)
+				new_prompt = fn(option, is_img2img, False, prefix, prompt + affix)
 			else:
-				Unprompted.original_prompt = fn(option, is_img2img, False, prefix + prompt, affix)
+				new_prompt = fn(option, is_img2img, False, prefix + prompt, affix)
 
-			if autoinclude_mode == "prompt":
-				p.all_prompts[0] = Unprompted.original_prompt
-				p.unprompted_original_prompt = Unprompted.original_prompt
-			else:
+			Unprompted.log.debug("Auto-including: " + new_prompt)
+
+			if autoinclude_mode == "negative_prompt":
+				Unprompted.original_negative_prompt = new_prompt
 				p.all_negative_prompts[0] = Unprompted.original_negative_prompt
 				p.original_negative_prompt = Unprompted.original_negative_prompt
+			else:
+				Unprompted.original_prompt = new_prompt
+				p.all_prompts[0] = Unprompted.original_prompt
+				p.unprompted_original_prompt = Unprompted.original_prompt
 
 		# Process Wizard auto-includes
 		if Unprompted.Config.ui.wizard_enabled and self.allow_postprocess:
@@ -733,6 +739,7 @@ class Scripts(scripts.Script):
 						previous_objects = current_objects
 						current_objects = current_objects.children[-1]
 
+					# offset for the last two elements
 					autoinclude_obj = previous_objects.children[-3]
 
 					if (autoinclude_obj.value):
@@ -743,6 +750,7 @@ class Scripts(scripts.Script):
 
 			# Execute wizard_generate_autoinclude() in order
 			for data in autoinclude_data:
+				Unprompted.log.debug(f"Auto-including \`{data['key']}\` in \`{data['mode']}\` at order {int(data['order'])}")
 				wizard_generate_autoinclude(data["tab"], data["mode"], data["idx"], data["key"], data["order"], is_img2img)
 
 		Unprompted.original_negative_prompt = p.all_negative_prompts[0]
@@ -753,9 +761,10 @@ class Scripts(scripts.Script):
 			p.extra_generation_params.update({
 			    "Unprompted Enabled": True,
 			    "Unprompted Prompt": Unprompted.original_prompt.replace("\"", "'"),  # Must use single quotes or output will have backslashes
-			    "Unprompted Negative Prompt": Unprompted.original_negative_prompt.replace("\"", "'"),
 			    "Unprompted Seed": unprompted_seed
 			})
+			if len(Unprompted.original_negative_prompt) > 0:
+				p.extra_generation_params.update({"Unprompted Negative Prompt": Unprompted.original_negative_prompt.replace("\"", "'")})
 
 		# Instantiate special vars
 		Unprompted.shortcode_user_vars["batch_index"] = 0  # legacy name for batch_count_index
@@ -824,8 +833,6 @@ class Scripts(scripts.Script):
 			Unprompted.log.debug("Entering Cleanup routine...")
 			for i in Unprompted.cleanup_routines:
 				Unprompted.shortcode_objects[i].cleanup()
-
-			if unprompted_seed != -1: random.seed()
 		# In standard mode, it is essential to evaluate the prompt here at least once to set up our Extra Networks correctly.
 		else:
 			# TODO: Think about ways of reducing code duplication between this and process_batch()
@@ -880,6 +887,8 @@ class Scripts(scripts.Script):
 					p.all_negative_prompts = p.all_negative_prompts
 					p.hr_prompts = p.prompts
 					p.hr_negative_prompts = p.negative_prompts
+
+		if unprompted_seed != -1: random.seed()
 
 	def process_batch(self, p, is_enabled=True, unprompted_seed=-1, match_main_seed=True, *args, **kwargs):
 		if (is_enabled and Unprompted.is_enabled and Unprompted.Config.stable_diffusion.batch_count_method == "standard"):

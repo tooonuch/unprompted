@@ -1,0 +1,6 @@
+[if sd_base="sdxl"]
+	[sets width=1536 height=1536]
+[/if]
+[elif sd_base="sd15"]
+	[sets width=640 height=640]
+[/elif]

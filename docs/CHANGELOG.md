@@ -3,12 +3,6 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>11.0.0 - </summary>
-
-
-
-</details>
-
 <details><summary>10.12.0 - 2 May 2024</summary>
 
 ### Added

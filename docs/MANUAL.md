@@ -14,6 +14,16 @@ In the meantime, you can improve performance by disabling Wizard tabs you do not
 
 </details>
 
+<details><summary>Wizard Slider Values</summary>
+
+When you generate a shortcode in the Wizard, some values may not quite match your sliders in the UI. This is due to a Gradio bug that will be resolved once the Web UI upgrades to Gradio 4:
+
+https://github.com/gradio-app/gradio/issues/1453
+
+As a workaround, you can type values into the box as opposed to dragging the sliders.
+
+</details>
+
 <details><summary>Compatibility with ControlNet</summary>
 
 To achieve compatibility between Unprompted and ControlNet, you must manually rename the `unprompted` extension folder to `_unprompted`. This is due to [a limitation in the Automatic1111 extension framework](https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/8011) whereby priority is determined alphabetically.

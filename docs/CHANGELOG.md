@@ -3,7 +3,13 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>10.12.0 - 2 May 2024</summary>
+<details open><summary>11.0.0 - </summary>
+
+
+
+</details>
+
+<details><summary>10.12.0 - 2 May 2024</summary>
 
 ### Added
 - New presets at `common/presets/dimensions`: Easily set your width and height to popular values, with support for both SD 1.5 and SDXL models

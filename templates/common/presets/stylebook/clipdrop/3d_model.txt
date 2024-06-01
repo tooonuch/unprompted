@@ -1,0 +1,2 @@
+[set stylebook_subject]professional 3d model [get stylebook_subject] . octane render, highly detailed, volumetric, dramatic lighting[/set]
+[set stylebook_negative]ugly, deformed, noisy, low poly, blurry, painting[/set]

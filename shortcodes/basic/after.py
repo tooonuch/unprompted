@@ -40,7 +40,8 @@ class Shortcode():
 		else:
 			self.log.info(f"Duplicate [after] content detected (index {index}), skipping per dupe_index_mode")
 
-		if "allow_unsafe_scripts" in pargs: self.allow_unsafe_scripts = True
+		if "allow_unsafe_scripts" in pargs:
+			self.allow_unsafe_scripts = True
 		return ("")
 
 	def after(self, p=None, processed=None):
@@ -64,11 +65,11 @@ class Shortcode():
 							if self.Unprompted.webui == "auto1111":
 								cn_path = self.Unprompted.extension_path(self.Unprompted.Config.stable_diffusion.controlnet.extension)
 								if cn_path:
-									cn_lib = "internal_controlnet"
-									# cn_lib = "lib_controlnet"
-									cn_module = helpers.import_file(f"{self.Unprompted.Config.stable_diffusion.controlnet.extension}.{cn_lib}.external_code", f"{cn_path}/{cn_lib}/external_code.py")
-									cn_module.update_cn_script_in_processing(self.Unprompted.main_p, [])
-									self.log.debug(f"{success_string} ControlNet")
+									# cn_lib = "internal_controlnet"
+									# cn_module = helpers.import_file(f"{self.Unprompted.Config.stable_diffusion.controlnet.extension}.{cn_lib}.external_code", f"{cn_path}/{cn_lib}/external_code.py")
+									# cn_module.update_cn_script_in_processing(self.Unprompted.main_p, [])
+									# self.log.debug(f"{success_string} ControlNet")
+									self.log.warning("It is not clear how to unhook ControlNet at this time. Please see this issue for more information: https://github.com/Mikubill/sd-webui-controlnet/issues/2082")
 								else:
 									self.log.error("Could not communicate with ControlNet.")
 
@@ -91,7 +92,8 @@ class Shortcode():
 
 			# Main processing loop
 			for batch_idx, this_after_content in enumerate(self.after_content):
-				if self.Unprompted.batch_test_bypass(batch_idx): continue
+				if self.Unprompted.batch_test_bypass(batch_idx):
+					continue
 
 				self.Unprompted.shortcode_user_vars["batch_real_index"] = batch_idx
 
@@ -108,4 +110,6 @@ class Shortcode():
 		return processed
 
 	def ui(self, gr):
-		gr.Number(label="Order compared to other [after] blocks 🡢 int", value=0, interactive=True)
+		return [
+		    gr.Number(label="Order compared to other [after] blocks 🡢 arg_int", value=0, interactive=True),
+		]

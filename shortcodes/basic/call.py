@@ -11,6 +11,7 @@ class Shortcode():
 	def run_atomic(self, pargs, kwargs, context):
 		import lib_unprompted.helpers as helpers
 
+		places = self.Unprompted.parse_arg("_places", "")
 		contents = "ok"
 		else_id = kwargs["_else_id"] if "_else_id" in kwargs else str(self.Unprompted.conditional_depth)
 
@@ -41,13 +42,20 @@ class Shortcode():
 					contents = self.Unprompted.shortcode_objects["function"].functions[name]
 					next_context = name
 			else:
-				file = self.Unprompted.parse_filepath(helpers.str_with_ext(name, self.Unprompted.Config.txt_format), context=context, must_exist=False)
+				if places:
+					for place in places:
+						file = self.Unprompted.parse_filepath(place + helpers.str_with_ext(name, self.Unprompted.Config.formats.txt), context=context, must_exist=False)
+						if os.path.exists(file):
+							break
+				else:
+					file = self.Unprompted.parse_filepath(helpers.str_with_ext(name, self.Unprompted.Config.formats.txt), context=context, must_exist=False)
 
 				if not os.path.exists(file):
-					if "_suppress_errors" not in pargs: self.log.error(f"File does not exist: {file}")
+					if "_suppress_errors" not in pargs:
+						self.log.error(f"File does not exist: {file}")
 					contents = ""
 				else:
-					next_context = file  # os.path.dirname(file)
+					next_context = file
 					with open(file, "r", encoding=this_encoding) as f:
 						contents = f.read()
 					f.close()
@@ -58,7 +66,8 @@ class Shortcode():
 		else:
 			# Use [set] with keyword arguments
 			for key, value in kwargs.items():
-				if (self.Unprompted.is_system_arg(key)): continue
+				if (self.Unprompted.is_system_arg(key)):
+					continue
 				self.Unprompted.shortcode_objects["set"].run_block([key], {}, context, self.Unprompted.parse_alt_tags(value))
 
 			contents = self.Unprompted.process_string(contents, next_context)
@@ -73,6 +82,7 @@ class Shortcode():
 		return contents
 
 	def ui(self, gr):
-		gr.Textbox(label="Function name or filepath 🡢 str", max_lines=1)
-		gr.Textbox(label="Expected encoding 🡢 _encoding", max_lines=1, value="utf-8")
-		pass
+		return [
+		    gr.Textbox(label="Function name or filepath 🡢 arg_str", max_lines=1),
+		    gr.Textbox(label="Expected encoding 🡢 _encoding", max_lines=1, value="utf-8"),
+		]

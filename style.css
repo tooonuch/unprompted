@@ -27,20 +27,19 @@ details[open]
 	text-decoration: underline;
 }
 
-#unprompted_result
+#unprompted_result .empty
 {
-	font-size: 18px;
-	padding: 10px;
-	font-family: IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+	display: none;
+}
+#unprompted_result div[data-testid=block-label]:has(+ .empty)
+{
+	display:none;
 }
 
-#unprompted_result strong
+#unprompted_result .cm-content
 {
-	font-family: Source Sans Pro, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", Segoe UI Symbol, "Noto Color Emoji";
-	display: block;
-	margin-bottom: 10px;
-	letter-spacing: 0.02em;
-	font-size: 20px;
+	font-size: 18px;
+	font-family: IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
 }
 
 #promo
@@ -177,4 +176,13 @@ details[open]
 {
 	position:absolute;
 	left:-2px;
+}
+
+.wizard-banner
+{
+	mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 67%, rgba(0,0,0,0) 100%);
+}
+.wizard-banner img
+{
+	border-radius:10px 10px 0 0;
 }

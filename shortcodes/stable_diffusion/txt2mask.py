@@ -15,22 +15,21 @@ class Shortcode():
 		self.cached_transform = -1
 		self.cached_model_method = ""
 		self.cached_predictor = -1
+		self.copied_images = []
 
 	def run_block(self, pargs, kwargs, context, content):
+		self.Unprompted.shortcode_install_requirements("", ["segment_anything"])
 		from PIL import ImageChops, Image, ImageOps
-		import os.path
+		import os
 		import torch
 		from torchvision import transforms
 		from matplotlib import pyplot as plt
 		import cv2
 		import numpy
 		import lib_unprompted.helpers as helpers
-		# import gc
 		from modules.images import flatten
 		from modules.shared import opts
 		from torchvision.transforms.functional import pil_to_tensor, to_pil_image
-
-		# gc.collect()
 
 		if "txt2mask_init_image" in kwargs:
 			self.init_image = kwargs["txt2mask_init_image"].copy()
@@ -40,7 +39,7 @@ class Shortcode():
 		else:
 			self.init_image = self.Unprompted.shortcode_user_vars["init_images"][0].copy()
 
-		method = self.Unprompted.parse_advanced(kwargs["method"], context) if "method" in kwargs else "clipseg"
+		method = self.Unprompted.parse_arg("method", "clipseg")
 
 		if method == "clipseg":
 			mask_width = 512
@@ -49,11 +48,12 @@ class Shortcode():
 			mask_width = self.init_image.size[0]
 			mask_height = self.init_image.size[1]
 
-		device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-		if device == "cuda": torch.cuda.empty_cache()
+		device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+		if device == "cuda":
+			torch.cuda.empty_cache()
 
 		if "stamp" in kwargs:
-			stamps = (self.Unprompted.parse_advanced(kwargs["stamp"], context)).split(self.Unprompted.Config.syntax.delimiter)
+			stamps = self.Unprompted.parse_arg("stamp", "").split(self.Unprompted.Config.syntax.delimiter)
 
 			stamp_x = int(float(self.Unprompted.parse_advanced(kwargs["stamp_x"], context))) if "stamp_x" in kwargs else 0
 			stamp_y = int(float(self.Unprompted.parse_advanced(kwargs["stamp_y"], context))) if "stamp_y" in kwargs else 0
@@ -64,7 +64,8 @@ class Shortcode():
 			for stamp in stamps:
 				# Checks for file in images/stamps, otherwise assumes absolute path
 				stamp_path = f"{self.Unprompted.base_dir}/images/stamps/{stamp}.png"
-				if not os.path.exists(stamp_path): stamp_path = stamp
+				if not os.path.exists(stamp_path):
+					stamp_path = stamp
 				if not os.path.exists(stamp_path):
 					self.log.error(f"Stamp not found: {stamp_path}")
 					continue
@@ -85,23 +86,25 @@ class Shortcode():
 
 				self.init_image.paste(stamp_img, (stamp_x, stamp_y), stamp_img)
 
-		brush_mask_mode = self.Unprompted.parse_advanced(kwargs["mode"], context) if "mode" in kwargs else "add"
+		brush_mask_mode = self.Unprompted.parse_arg("mode", "add")
 		self.show = True if "show" in pargs else False
 
+		mask_blur = self.Unprompted.parse_arg("blur", 0)
+
 		self.legacy_weights = True if "legacy_weights" in pargs else False
-		smoothing = int(self.Unprompted.parse_advanced(kwargs["smoothing"], context)) if "smoothing" in kwargs else 20
+		smoothing = self.Unprompted.parse_arg("smoothing", 20)
 		smoothing_kernel = None
 		if smoothing > 0:
 			smoothing_kernel = numpy.ones((smoothing, smoothing), numpy.float32) / (smoothing * smoothing)
 
-		neg_smoothing = int(self.Unprompted.parse_advanced(kwargs["neg_smoothing"], context)) if "neg_smoothing" in kwargs else 20
+		neg_smoothing = self.Unprompted.parse_arg("neg_smoothing", 20)
 		neg_smoothing_kernel = None
 		if neg_smoothing > 0:
 			neg_smoothing_kernel = numpy.ones((neg_smoothing, neg_smoothing), numpy.float32) / (neg_smoothing * neg_smoothing)
 
 		# Pad the mask by applying a dilation or erosion
-		mask_padding = int(self.Unprompted.parse_advanced(kwargs["padding"], context) if "padding" in kwargs else 0)
-		neg_mask_padding = int(self.Unprompted.parse_advanced(kwargs["neg_padding"], context) if "neg_padding" in kwargs else 0)
+		mask_padding = int(self.Unprompted.parse_arg("padding", 0))
+		neg_mask_padding = int(self.Unprompted.parse_arg("neg_padding", 0))
 		padding_dilation_kernel = None
 		if (mask_padding != 0):
 			padding_dilation_kernel = numpy.ones((abs(mask_padding), abs(mask_padding)), numpy.uint8)
@@ -114,20 +117,23 @@ class Shortcode():
 		prompt_parts = len(prompts)
 
 		if "negative_mask" in kwargs:
-			neg_parsed = self.Unprompted.parse_advanced(kwargs["negative_mask"], context)
-			if len(neg_parsed) < 1: negative_prompts = None
+			neg_parsed = self.Unprompted.parse_arg("negative_mask", "")
+			if len(neg_parsed) < 1:
+				negative_prompts = None
 			else:
 				negative_prompts = neg_parsed.split(self.Unprompted.Config.syntax.delimiter)
 				negative_prompt_parts = len(negative_prompts)
 		else:
 			negative_prompts = None
 
-		mask_precision = min(255, int(self.Unprompted.parse_advanced(kwargs["precision"], context) if "precision" in kwargs else 100))
-		neg_mask_precision = min(255, int(self.Unprompted.parse_advanced(kwargs["neg_precision"], context) if "neg_precision" in kwargs else 100))
+		mask_precision = min(255, self.Unprompted.parse_arg("precision", 100))
+		neg_mask_precision = min(255, self.Unprompted.parse_arg("neg_precision", 100))
 
 		def overlay_mask_part(img_a, img_b, mode):
-			if (mode == "discard"): img_a = ImageChops.darker(img_a, img_b)
-			else: img_a = ImageChops.lighter(img_a, img_b)
+			if (mode == "discard"):
+				img_a = ImageChops.darker(img_a, img_b)
+			else:
+				img_a = ImageChops.lighter(img_a, img_b)
 			return (img_a)
 
 		def gray_to_pil(img):
@@ -139,28 +145,50 @@ class Shortcode():
 				filename = f"mask_{mode}_{i}.png"
 
 				if method == "clipseg":
-					plt.imsave(filename, torch.sigmoid(mask[0]))
-					img = cv2.imread(filename)
-				# TODO: Figure out how to convert the plot above to numpy instead of re-loading image
+					mask_np = torch.sigmoid(mask[0]).cpu().numpy()
+					img = (mask_np * 255).astype(numpy.uint8)
+				# Ensure the mask is a numpy array
+				elif isinstance(mask, torch.Tensor):
+					mask_np = mask.detach().cpu().numpy()
+					# Convert the mask to an image
+					img = (mask_np * 255).astype(numpy.uint8)
 				else:
-					plt.imsave(filename, mask)
-					img = cv2.imread(filename)
-					img = cv2.resize(img, (mask_width, mask_height))
+					img = mask
+
+				# img = Image.fromarray(mask_np)
+				# img = img.resize((mask_width, mask_height))
 
 				if padding_dilation_kernel is not None:
-					if (mask_padding > 0): img = cv2.dilate(img, padding_dilation_kernel, iterations=1)
-					else: img = cv2.erode(img, padding_dilation_kernel, iterations=1)
-				if smoothing_kernel is not None: img = cv2.filter2D(img, -1, smoothing_kernel)
+					if (mask_padding > 0):
+						img = cv2.dilate(img, padding_dilation_kernel, iterations=1)
+					else:
+						img = cv2.erode(img, padding_dilation_kernel, iterations=1)
+				if smoothing_kernel is not None:
+					img = cv2.filter2D(img, -1, smoothing_kernel)
 
-				gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-				Image.fromarray(gray_image).save("mask_gray_test.png")
+				if "debug" in pargs:
+					Image.fromarray(img).save(filename)
+
+				# Check if we need to convert the mask to a grayscale:
+				if len(img.shape) > 2:
+					gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+				else:
+					gray_image = img
+				# Check if we need to convert the image to 8-bit integers:
+				# if gray_image.dtype != numpy.uint8:
+				#	gray_image = (gray_image * 255).astype(numpy.uint8)
+
+				if "debug" in pargs:
+					Image.fromarray(gray_image).save("mask_gray_test.png")
 				(thresh, bw_image) = cv2.threshold(gray_image, mask_precision, 255, cv2.THRESH_BINARY)
 
-				if (mode == "discard"): bw_image = numpy.invert(bw_image)
+				if (mode == "discard"):
+					bw_image = numpy.invert(bw_image)
 
 				# overlay mask parts
 				bw_image = gray_to_pil(bw_image)
-				if (i > 0 or final_img is not None): bw_image = overlay_mask_part(bw_image, final_img, mode)
+				if (i > 0 or final_img is not None):
+					bw_image = overlay_mask_part(bw_image, final_img, mode)
 
 				final_img = bw_image
 			return (final_img)
@@ -170,20 +198,25 @@ class Shortcode():
 			negative_preds = []
 			image_pil = flatten(self.init_image, opts.img2img_background_color)
 
-			if method == "fastsam":
+			if method == "peekaboo":
+				pass
+			elif method == "fastsam":
+				self.Unprompted.shortcode_install_requirements(f"fastSAM", ["ultralytics"])
 				from ultralytics import YOLO
 				from lib_unprompted.fastsam.utils import tools
 				import clip
 				import numpy as np
 				import cv2
 
-				fastsam_better_quality = bool(self.Unprompted.parse_advanced(kwargs["fastsam_better_quality"], context)) if "fastsam_better_quality" in kwargs else True
-				fastsam_retina = bool(self.Unprompted.parse_advanced(kwargs["fastsam_retina"], context)) if "fastsam_retina" in kwargs else True
+				fastsam_better_quality = self.Unprompted.parse_arg("fastsam_better_quality", True)
+
+				fastsam_retina = self.Unprompted.parse_arg("fastsam_retina", False)
 				fastsam_model_type = "YOLOv8s"
-				fastsam_iou = float(self.Unprompted.parse_advanced(kwargs["fastsam_iou"], context)) if "fastsam_iou" in kwargs else 0.9
-				fastsam_conf = float(self.Unprompted.parse_advanced(kwargs["fastsam_conf"], context)) if "fastsam_conf" in kwargs else 0.4
-				fastsam_max_det = int(self.Unprompted.parse_advanced(kwargs["fastsam_max_det"], context)) if "fastsam_max_det" in kwargs else 100
-				fastsam_size = int(self.Unprompted.parse_advanced(kwargs["fastsam_size"], context)) if "fastsam_size" in kwargs else 1024
+				fastsam_iou = self.Unprompted.parse_arg("fastsam_iou", 0.9)
+
+				fastsam_conf = self.Unprompted.parse_arg("fastsam_conf", 0.4)
+				fastsam_max_det = self.Unprompted.parse_arg("fastsam_max_det", 100)
+				fastsam_size = self.Unprompted.parse_arg("fastsam_size", 1024)
 
 				def fast_show_mask(
 				    annotation,
@@ -236,16 +269,20 @@ class Shortcode():
 
 				sam_model_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}/fastsam"
 				os.makedirs(sam_model_dir, exist_ok=True)
-				if fastsam_model_type == "YOLOv8x": sam_filename = "FastSAM-x.pt"
-				else: sam_filename = "FastSAM-s.pt"
+				if fastsam_model_type == "YOLOv8x":
+					sam_filename = "FastSAM-x.pt"
+				else:
+					sam_filename = "FastSAM-s.pt"
 				sam_file = f"{sam_model_dir}/{sam_filename}"
 
 				# Download model weights if we don't have them yet
 				if not os.path.exists(sam_file):
 					self.log.info("Downloading FastSAM model weights...")
 					# TODO: The YOLOv8x model is too big to download directly from Gdrive, find another host that supports it. Not particularly urgent as the difference in quality between the two models seems negligible...
-					if fastsam_model_type == "YOLOv8x": helpers.download_file(sam_file, "https://drive.google.com/uc?export=download&id=1m1sjY4ihXBU1fZXdQ-Xdj-mDltW-2Rqv")
-					else: helpers.download_file(sam_file, f"https://drive.google.com/uc?export=download&id=10XmSj6mmpmRb8NhXbtiuO9cTTBwR_9SV")
+					if fastsam_model_type == "YOLOv8x":
+						helpers.download_file(sam_file, "https://drive.google.com/uc?export=download&id=1m1sjY4ihXBU1fZXdQ-Xdj-mDltW-2Rqv")
+					else:
+						helpers.download_file(sam_file, f"https://drive.google.com/uc?export=download&id=10XmSj6mmpmRb8NhXbtiuO9cTTBwR_9SV")
 
 				if self.cached_model == -1 or self.cached_model_method != method:
 					model = YOLO(sam_file)
@@ -289,7 +326,8 @@ class Shortcode():
 							annotations[i] = cv2.morphologyEx(mask.astype(np.uint8), cv2.MORPH_OPEN, np.ones((8, 8), np.uint8))
 					# from PIL import Image
 					# preds = Image.fromarray((preds * 255).astype(np.uint8))
-					if device == "cpu": annotations = np.array(annotations)
+					if device == "cpu":
+						annotations = np.array(annotations)
 					else:
 						if isinstance(annotations[0], np.ndarray):
 							annotations = torch.from_numpy(annotations)
@@ -303,7 +341,8 @@ class Shortcode():
 					)
 
 				preds.append(run_fastsam(prompts))
-				if negative_prompts: negative_preds.append(run_fastsam(negative_prompts))
+				if negative_prompts:
+					negative_preds.append(run_fastsam(negative_prompts))
 
 			elif method == "clip_surgery":
 				from lib_unprompted import clip_surgery as clip
@@ -323,7 +362,8 @@ class Shortcode():
 				    'a photo of a small {}.', 'a tattoo of the {}.', 'there is a {} in the scene.', 'there is the {} in the scene.', 'this is a {} in the scene.', 'this is the {} in the scene.', 'this is one {} in the scene.'
 				]
 
-				if "redundant_features" in kwargs: redundants.extend(kwargs["redundant_features"].split(self.Unprompted.Config.syntax.delimiter))
+				if "redundant_features" in kwargs:
+					redundants.extend(kwargs["redundant_features"].split(self.Unprompted.Config.syntax.delimiter))
 				self.bypass_sam = True if "bypass_sam" in pargs else False
 
 				### Init CLIP and data
@@ -373,9 +413,10 @@ class Shortcode():
 							return (preds)
 
 						preds = reg_inference(text_features)
-						if (negative_prompts): negative_preds = reg_inference(negative_text_features)
+						if (negative_prompts):
+							negative_preds = reg_inference(negative_text_features)
 					else:
-						point_thresh = float(self.Unprompted.parse_advanced(kwargs["point_threshold"], context)) if "point_threshold" in kwargs else 0.98
+						point_thresh = self.Unprompted.parse_arg("point_threshold", 0.98)
 						multimask_output = True if "multimask_output" in pargs else False
 
 						# Init SAM
@@ -436,9 +477,119 @@ class Shortcode():
 							return (preds)
 
 						preds = sam_inference(text_features)
-						if negative_prompts: negative_preds = sam_inference(negative_text_features)
-			# clipseg method
+						if negative_prompts:
+							negative_preds = sam_inference(negative_text_features)
+			elif method == "tris":
+				import cv2
+				import numpy as np
+				from lib_unprompted.tris.CLIP import clip as clip
+				from PIL import Image
+				import torch.nn.functional as F
+				import torchvision.transforms as transforms
+				from math import floor
+
+				from lib_unprompted.tris.args import get_parser
+				from lib_unprompted.tris.model.model_stage2 import TRIS
+
+				# os.environ['CUDA_ENABLE_DEVICES'] = '0'
+
+				bert_tokenizer = self.Unprompted.parse_arg("bert_tokenizer", "clip")
+				backbone = self.Unprompted.parse_arg("backbone", "clip-RN50")
+				max_query_len = self.Unprompted.parse_arg("max_query_len", 20)
+				tris_model = self.Unprompted.parse_arg("tris_model", "stage2_refcocog_google.pth")
+
+				img_size = self.Unprompted.parse_arg("img_size", 320)
+				if img_size == -1:
+					img_size = None
+				# max_length = 20
+
+				if self.cached_model == -1 or self.cached_model_method != method:
+					self.log.debug("Loading TRIS model...")
+					model = TRIS(bert_tokenizer, backbone, max_query_len)
+					model.cuda()
+
+					model_path = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}/tris/{tris_model}"
+					checkpoint = torch.load(model_path)
+					model.load_state_dict(checkpoint["model"], strict=False)
+
+					self.cached_model = model
+					self.cached_model_method = method
+				else:
+					self.log.info("Using cached TRIS model.")
+
+				def get_transform(size=None):
+					if size is None:
+						transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+					else:
+						transform = transforms.Compose([transforms.Resize((size, size)), transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+					return transform
+
+				def prepare_data(text, max_length=max_query_len):
+
+					word_ids = []
+					tokenizer = clip.tokenize
+
+					for text_part in text:
+						word_id = tokenizer(text_part).squeeze(0)[:floor(max_length / len(text))]
+						word_ids.append(word_id.unsqueeze(0))
+					word_ids = torch.cat(word_ids, dim=-1)
+
+					# Pad to max_length if necessary
+					if word_ids.shape[1] < max_length:
+						pad = torch.zeros((1, max_length - word_ids.shape[1]), dtype=torch.long)
+						word_ids = torch.cat([word_ids, pad], dim=1)
+
+					# image_np = np.array(image_pil)
+					# h, w, c = image_np.shape
+					w, h = image_pil.size
+
+					if self.cached_transform == -1 or self.cached_model_method != method:
+						self.cached_transform = get_transform(size=img_size)
+					img = self.cached_transform(image_pil)
+					# word_ids = torch.tensor(word_ids)
+
+					return img, word_ids, h, w
+
+				def get_norm_cam(cam):
+					cam = torch.clamp(cam, min=0)
+					cam_t = cam.unsqueeze(0).unsqueeze(0).flatten(2)
+					cam_max = torch.max(cam_t, dim=2).values.unsqueeze(2).unsqueeze(3)
+					cam_min = torch.min(cam_t, dim=2).values.unsqueeze(2).unsqueeze(3)
+					norm_cam = (cam - cam_min) / (cam_max - cam_min + 1e-5)
+					norm_cam = norm_cam.squeeze(0).squeeze(0)
+					return norm_cam
+
+				img, word_id, h, w = prepare_data(prompts, max_query_len)
+				preds = []
+				for i in range(word_id.shape[0]):
+					single_word_id = word_id[i].unsqueeze(0)
+
+					outputs = self.cached_model(img.unsqueeze(0).cuda(), single_word_id.cuda())
+
+					output = outputs[0]
+					pred = F.interpolate(output, (h, w), align_corners=True, mode='bilinear').squeeze(0).squeeze(0)
+
+					normalized_heatmap = get_norm_cam(pred.detach().cpu())
+					preds.append(normalized_heatmap)
+
+					if "debug" in pargs:
+						map_img = np.uint8(normalized_heatmap * 255)
+						heatmap_img = cv2.applyColorMap(map_img, cv2.COLORMAP_JET)
+						if self.init_image is not None:
+							# Convert init image to numpy
+							original = np.array(self.init_image)
+							original_img = cv2.cvtColor(original, cv2.COLOR_RGB2BGR)
+							img = cv2.addWeighted(heatmap_img, .6, original_img, 0.4, 0)
+						else:
+							img = heatmap_img
+
+						img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+						# Convert to PIL
+						Image.fromarray(img).save(f"heatmap_{i}.png")
+
+			# CLIPseg method
 			else:
+				import torchvision.transforms as transforms
 				from lib_unprompted.stable_diffusion.clipseg.models.clipseg import CLIPDensePredT
 
 				model_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}/clipseg"
@@ -450,10 +601,8 @@ class Shortcode():
 				d16_file = f"{model_dir}/rd16-uni.pth"
 
 				# Download model weights if we don't have them yet
-				if not os.path.exists(d64_file):
-					self.log.info("Downloading clipseg model weights...")
-					helpers.download_file(d64_file, f"https://owncloud.gwdg.de/index.php/s/ioHbRzFx6th32hn/download?path=%2F&files={d64_filename}")
-					helpers.download_file(d16_file, "https://owncloud.gwdg.de/index.php/s/ioHbRzFx6th32hn/download?path=%2F&files=rd16-uni.pth")
+				if not helpers.download_file(d64_file, f"https://owncloud.gwdg.de/index.php/s/ioHbRzFx6th32hn/download?path=%2F&files={d64_filename}") or not helpers.download_file(d16_file, "https://owncloud.gwdg.de/index.php/s/ioHbRzFx6th32hn/download?path=%2F&files=rd16-uni.pth"):
+					return ""
 
 				# load model
 				if self.cached_model == -1 or self.cached_model_method != method:
@@ -485,17 +634,19 @@ class Shortcode():
 				with torch.no_grad():
 					if "image_prompt" in kwargs:
 						from PIL import Image
-						img_mask = flatten(Image.open(r"A:/inbox/test_mask.png"), opts.img2img_background_color)
+						img_mask = flatten(Image.open(kwargs["image_prompt"]), opts.img2img_background_color)
 						img_mask = transform(img_mask).unsqueeze(0)
 						preds = model(img.to(device=device), img_mask.to(device=device))[0].cpu()
 					else:
 						preds = model(img.repeat(prompt_parts, 1, 1, 1).to(device=device), prompts)[0].cpu()
 
-					if (negative_prompts): negative_preds = model(img.repeat(negative_prompt_parts, 1, 1, 1).to(device=device), negative_prompts)[0].cpu()
+					if (negative_prompts):
+						negative_preds = model(img.repeat(negative_prompt_parts, 1, 1, 1).to(device=device), negative_prompts)[0].cpu()
 
 			# The below logic applies to all masking methods
 
-			if "image_mask" not in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars["image_mask"] = None
+			if "image_mask" not in self.Unprompted.shortcode_user_vars:
+				self.Unprompted.shortcode_user_vars["image_mask"] = None
 
 			if (brush_mask_mode == "add" and self.Unprompted.shortcode_user_vars["image_mask"] is not None):
 				final_img = self.Unprompted.shortcode_user_vars["image_mask"].convert("RGBA").resize((mask_width, mask_height))
@@ -510,7 +661,8 @@ class Shortcode():
 				self.Unprompted.shortcode_user_vars["image_mask"] = ImageOps.invert(self.Unprompted.shortcode_user_vars["image_mask"])
 				self.Unprompted.shortcode_user_vars["image_mask"] = self.Unprompted.shortcode_user_vars["image_mask"].convert("RGBA").resize((mask_width, mask_height))
 				final_img = overlay_mask_part(final_img, self.Unprompted.shortcode_user_vars["image_mask"], "discard")
-			if (negative_prompts): final_img = process_mask_parts(negative_preds, "discard", final_img, neg_mask_precision, neg_mask_padding, neg_padding_dilation_kernel, neg_smoothing_kernel)
+			if (negative_prompts):
+				final_img = process_mask_parts(negative_preds, "discard", final_img, neg_mask_precision, neg_mask_padding, neg_padding_dilation_kernel, neg_smoothing_kernel)
 
 			if "size_var" in kwargs:
 				img_data = final_img.load()
@@ -520,7 +672,8 @@ class Shortcode():
 				for y in range(mask_height):
 					for x in range(mask_width):
 						pixel_data = img_data[x, y]
-						if (pixel_data[0] == 0 and pixel_data[1] == 0 and pixel_data[2] == 0): black_pixels += 1
+						if (pixel_data[0] == 0 and pixel_data[1] == 0 and pixel_data[2] == 0):
+							black_pixels += 1
 				subject_size = 1 - black_pixels / total_pixels
 				self.Unprompted.shortcode_user_vars[kwargs["size_var"]] = subject_size
 			if "aspect_var" in kwargs:
@@ -532,14 +685,16 @@ class Shortcode():
 				# Convert black pixels to transparent
 				for y in range(height):
 					for x in range(width):
-						if mask_data[x, y] == (0, 0, 0, 255): mask_data[x, y] = (0, 0, 0, 0)
+						if mask_data[x, y] == (0, 0, 0, 255):
+							mask_data[x, y] = (0, 0, 0, 0)
 				# Crop the image by transparency
 				cropped = paste_mask.crop(paste_mask.getbbox())
 				# Get the aspect ratio of cropped mask
 				aspect_ratio = cropped.size[0] / cropped.size[1]
 				self.log.debug(f"Mask aspect ratio: {aspect_ratio}")
 				self.Unprompted.shortcode_user_vars[kwargs["aspect_var"]] = aspect_ratio
-				if "save" in kwargs: cropped.save(f"cropped_mask.png")
+				if "save" in kwargs:
+					cropped.save(f"cropped_mask.png")
 
 			# Inpaint sketch compatibility
 			if "sketch_color" in kwargs:
@@ -547,7 +702,8 @@ class Shortcode():
 
 				this_color = kwargs["sketch_color"]
 				# Convert to tuple for use with colorize
-				if this_color[0].isdigit(): this_color = tuple(map(int, this_color.split(',')))
+				if this_color[0].isdigit():
+					this_color = tuple(map(int, this_color.split(',')))
 				paste_mask = ImageOps.colorize(final_img.convert("L"), black="black", white=this_color)
 
 				# Convert black pixels to transparent
@@ -556,7 +712,8 @@ class Shortcode():
 				width, height = paste_mask.size
 				for y in range(height):
 					for x in range(width):
-						if mask_data[x, y] == (0, 0, 0, 255): mask_data[x, y] = (0, 0, 0, 0)
+						if mask_data[x, y] == (0, 0, 0, 255):
+							mask_data[x, y] = (0, 0, 0, 0)
 
 				# Match size just in case
 				paste_mask = paste_mask.resize((image_pil.size[0], image_pil.size[1]))
@@ -591,11 +748,6 @@ class Shortcode():
 			else:
 				if ("mode" not in self.Unprompted.shortcode_user_vars or self.Unprompted.shortcode_user_vars["mode"] != 5):  # 5 =  batch processing
 					self.Unprompted.shortcode_user_vars["mode"] = 4  # "mask upload" mode to avoid unnecessary processing
-				if ("mask_blur" in self.Unprompted.shortcode_user_vars and self.Unprompted.shortcode_user_vars["mask_blur"] > 0):
-					from PIL import ImageFilter
-					blur = ImageFilter.GaussianBlur(self.Unprompted.shortcode_user_vars["mask_blur"])
-					final_img = final_img.filter(blur)
-					self.Unprompted.shortcode_user_vars["mask_blur"] = 0
 
 			# Free up memory
 			if "unload_model" in pargs:
@@ -609,45 +761,69 @@ class Shortcode():
 			return final_img
 
 		# Set up processor parameters correctly
-		self.image_mask = get_mask().resize((self.init_image.width, self.init_image.height))
+		self.image_mask = get_mask()
 
-		if "return_image" in pargs: return (self.image_mask)
+		if not mask_blur and ("mask_blur" in self.Unprompted.shortcode_user_vars and self.Unprompted.shortcode_user_vars["mask_blur"] > 0):
+			mask_blur = self.Unprompted.shortcode_user_vars["mask_blur"]
+			self.Unprompted.shortcode_user_vars["mask_blur"] = 0
 
-		if "mode" in self.Unprompted.shortcode_user_vars:
-			self.Unprompted.shortcode_user_vars["mode"] = min(5, self.Unprompted.shortcode_user_vars["mode"])
-		self.Unprompted.shortcode_user_vars["image_mask"] = self.image_mask
+		if mask_blur:
+			from PIL import ImageFilter
+			blur = ImageFilter.GaussianBlur(mask_blur)
+			self.image_mask = self.image_mask.filter(blur)
 
-		# Copy code from modules/processing.py, necessary for batch processing
-		if "mask" in self.Unprompted.shortcode_user_vars and self.Unprompted.shortcode_user_vars["mask"] is not None:
-			self.log.warning("Detected batch tab tensor mask, attempting to update it...")
-			latmask = self.image_mask.convert('RGB').resize((self.Unprompted.shortcode_user_vars["init_latent"].shape[3], self.Unprompted.shortcode_user_vars["init_latent"].shape[2]))
-			latmask = numpy.moveaxis(numpy.array(latmask, dtype=numpy.float32), 2, 0) / 255
-			latmask = latmask[0]
-			latmask = numpy.around(latmask)
-			latmask = numpy.tile(latmask[None], (4, 1, 1))
-			self.Unprompted.shortcode_user_vars["mask"] = torch.asarray(1.0 - latmask).to(device).type(self.Unprompted.main_p.sd_model.dtype)
-			self.Unprompted.shortcode_user_vars["nmask"] = torch.asarray(latmask).to(device).type(self.Unprompted.main_p.sd_model.dtype)
+		# Ensure correct size
+		self.image_mask = self.image_mask.resize((self.init_image.width, self.init_image.height))
 
-		# self.Unprompted.shortcode_user_vars["mmask"]=self.Unprompted.shortcode_user_vars["mask"]
-		self.Unprompted.shortcode_user_vars["mask_for_overlay"] = self.image_mask
-		self.Unprompted.shortcode_user_vars["latent_mask"] = None  # fixes inpainting full resolution
-		arr = {}
-		arr["image"] = self.init_image
-		arr["mask"] = self.image_mask
-		self.Unprompted.shortcode_user_vars["init_img_with_mask"] = arr
-		self.Unprompted.shortcode_user_vars["init_mask"] = self.image_mask  # TODO: Not sure if used anymore
+		if "not_img2img" not in pargs:
+			if "mode" in self.Unprompted.shortcode_user_vars:
+				self.Unprompted.shortcode_user_vars["mode"] = min(5, self.Unprompted.shortcode_user_vars["mode"])
+			self.Unprompted.shortcode_user_vars["image_mask"] = self.image_mask
 
-		if "save" in kwargs: self.image_mask.save(f"{self.Unprompted.parse_advanced(kwargs['save'],context)}.png")
+			# Copy code from modules/processing.py, necessary for batch processing
+			if "mask" in self.Unprompted.shortcode_user_vars and self.Unprompted.shortcode_user_vars["mask"] is not None:
+				self.log.warning("Detected batch tab tensor mask, attempting to update it...")
+				latmask = self.image_mask.convert('RGB').resize((self.Unprompted.shortcode_user_vars["init_latent"].shape[3], self.Unprompted.shortcode_user_vars["init_latent"].shape[2]))
+				latmask = numpy.moveaxis(numpy.array(latmask, dtype=numpy.float32), 2, 0) / 255
+				latmask = latmask[0]
+				latmask = numpy.around(latmask)
+				latmask = numpy.tile(latmask[None], (4, 1, 1))
+				self.Unprompted.shortcode_user_vars["mask"] = torch.asarray(1.0 - latmask).to(device).type(self.Unprompted.main_p.sd_model.dtype)
+				self.Unprompted.shortcode_user_vars["nmask"] = torch.asarray(latmask).to(device).type(self.Unprompted.main_p.sd_model.dtype)
 
-		return ""
+			# self.Unprompted.shortcode_user_vars["mmask"]=self.Unprompted.shortcode_user_vars["mask"]
+			self.Unprompted.shortcode_user_vars["mask_for_overlay"] = self.image_mask
+			self.Unprompted.shortcode_user_vars["latent_mask"] = None  # fixes inpainting full resolution
+			arr = {}
+			arr["image"] = self.init_image
+			arr["mask"] = self.image_mask
+			self.Unprompted.shortcode_user_vars["init_img_with_mask"] = arr
+			self.Unprompted.shortcode_user_vars["init_mask"] = self.image_mask  # TODO: Not sure if used anymore
+
+		if "save" in kwargs:
+			self.image_mask.save(f"{self.Unprompted.parse_advanced(kwargs['save'],context)}.png")
+
+		if "return_image" in pargs:
+			if "not_img2img" in pargs:
+				return (self.image_mask)
+			else:
+				import copy
+				# Note: The copied_images list is used to prevent premature garbage collection
+				self.copied_images.append(copy.deepcopy(self.image_mask))
+				# self.copied_images.append(self.image_mask.copy())
+				return self.copied_images[-1]
+		else:
+			return ""
 
 	def after(self, p=None, processed=None):
 		from torchvision.transforms.functional import pil_to_tensor, to_pil_image
 		from torchvision.utils import draw_segmentation_masks
 
 		if self.image_mask and self.show:
-			if "mode" not in self.Unprompted.shortcode_user_vars or self.Unprompted.shortcode_user_vars["mode"] >= 4: processed.images.append(self.image_mask)
-			else: processed.images.append(self.Unprompted.shortcode_user_vars["colorized_mask"])
+			if "mode" not in self.Unprompted.shortcode_user_vars or self.Unprompted.shortcode_user_vars["mode"] >= 4:
+				processed.images.append(self.image_mask)
+			else:
+				processed.images.append(self.Unprompted.shortcode_user_vars["colorized_mask"])
 
 			overlayed_init_img = draw_segmentation_masks(pil_to_tensor(self.Unprompted.shortcode_user_vars["init_images"][0].convert("RGB")), pil_to_tensor(self.image_mask.convert("L")) > 0)
 			processed.images.append(to_pil_image(overlayed_init_img))
@@ -655,28 +831,37 @@ class Shortcode():
 			self.show = False
 			return processed
 
+	def goodbye(self):
+		self.copied_images = []
+
 	def ui(self, gr):
+		o = []
+
 		with gr.Accordion("⚙️ General Settings", open=False):
-			gr.Radio(label="Masking tech method (clipseg is most accurate) 🡢 method", choices=["clipseg", "clip_surgery", "fastsam"], value="clipseg", interactive=True)
-			gr.Radio(label="Mask blend mode 🡢 mode", choices=["add", "subtract", "discard"], value="add", interactive=True)
-			gr.Textbox(label="Mask color, enables Inpaint Sketch mode 🡢 sketch_color", max_lines=1, placeholder="e.g. tan or 127,127,127")
-			gr.Number(label="Mask alpha, must be used in conjunction with mask color 🡢 sketch_alpha", value=0, interactive=True)
-			gr.Textbox(label="Save the mask size to the following variable 🡢 size_var", max_lines=1)
-			gr.Checkbox(label="Show mask in output 🡢 show")
-			gr.Checkbox(label="Debug mode (saves mask images to root WebUI folder) 🡢 debug")
-			gr.Checkbox(label="Unload model after inference (for low memory devices) 🡢 unload_model")
-			gr.Checkbox(label="Use clipseg legacy weights 🡢 legacy_weights")
-		with gr.Accordion("➕ Positive Mask", open=False):
-			gr.Number(label="Precision of selected area 🡢 precision", value=100, interactive=True)
-			gr.Number(label="Padding radius in pixels 🡢 padding", value=0, interactive=True)
-			gr.Number(label="Smoothing radius in pixels 🡢 smoothing", value=20, interactive=True)
-		with gr.Accordion("➖ Negative Mask", open=False):
-			gr.Textbox(label="Negative mask prompt 🡢 negative_mask", max_lines=1)
-			gr.Number(label="Negative mask precision of selected area 🡢 neg_precision", value=100, interactive=True)
-			gr.Number(label="Negative mask padding radius in pixels 🡢 neg_padding", value=0, interactive=True)
-			gr.Number(label="Negative mask smoothing radius in pixels 🡢 neg_smoothing", value=20, interactive=True)
+			o.append(gr.Radio(label="Masking tech method (clipseg is most accurate) 🡢 method", choices=["clipseg", "clip_surgery", "fastsam", "tris"], value="clipseg", interactive=True))
+			o.append(gr.Radio(label="Mask blend mode 🡢 mode", choices=["add", "subtract", "discard"], value="add", interactive=True))
+			o.append(gr.Textbox(label="Mask color, enables Inpaint Sketch mode 🡢 sketch_color", max_lines=1, placeholder="e.g. tan or 127,127,127"))
+			o.append(gr.Number(label="Mask alpha, must be used in conjunction with mask color 🡢 sketch_alpha", value=0, interactive=True))
+			o.append(gr.Number(label="Mask blur, not needed if you use inpaint blur already 🡢 blur", value=0, interactive=True))
+			o.append(gr.Textbox(label="Save the mask size to the following variable 🡢 size_var", max_lines=1))
+			o.append(gr.Checkbox(label="Show mask in output 🡢 show"))
+			o.append(gr.Checkbox(label="Debug mode (saves mask images to root WebUI folder) 🡢 debug"))
+			o.append(gr.Checkbox(label="Unload model after inference (for low memory devices) 🡢 unload_model"))
+			o.append(gr.Checkbox(label="Use clipseg legacy weights 🡢 legacy_weights"))
+		with gr.Row():
+			with gr.Accordion("➕ Positive Mask", open=False):
+				o.append(gr.Number(label="Precision of selected area 🡢 precision", value=100, interactive=True))
+				o.append(gr.Number(label="Padding radius in pixels 🡢 padding", value=0, interactive=True))
+				o.append(gr.Number(label="Smoothing radius in pixels 🡢 smoothing", value=20, interactive=True))
+			with gr.Accordion("➖ Negative Mask", open=False):
+				o.append(gr.Textbox(label="Negative mask prompt 🡢 negative_mask", max_lines=1))
+				o.append(gr.Number(label="Negative mask precision of selected area 🡢 neg_precision", value=100, interactive=True))
+				o.append(gr.Number(label="Negative mask padding radius in pixels 🡢 neg_padding", value=0, interactive=True))
+				o.append(gr.Number(label="Negative mask smoothing radius in pixels 🡢 neg_smoothing", value=20, interactive=True))
 		with gr.Accordion("🖼️ Stamp", open=False):
-			gr.Textbox(label="Stamp file(s) 🡢 stamp", max_lines=1, placeholder="Looks for PNG file in unprompted/images/stamps OR absolute path")
-			gr.Dropdown(label="Stamp method 🡢 stamp_method", choices=["stretch", "center"], value="stretch", interactive=True)
-			gr.Number(label="Stamp X 🡢 stamp_x", value=0, interactive=True)
-			gr.Number(label="Stamp Y 🡢 stamp_y", value=0, interactive=True)
+			o.append(gr.Textbox(label="Stamp file(s) 🡢 stamp", max_lines=1, placeholder="Looks for PNG file in unprompted/images/stamps OR absolute path"))
+			o.append(gr.Dropdown(label="Stamp method 🡢 stamp_method", choices=["stretch", "center"], value="stretch", interactive=True))
+			o.append(gr.Number(label="Stamp X 🡢 stamp_x", value=0, interactive=True))
+			o.append(gr.Number(label="Stamp Y 🡢 stamp_y", value=0, interactive=True))
+
+		return o

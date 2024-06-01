@@ -25,7 +25,8 @@ class Shortcode():
 
 		while True:
 			for key in pargs:
-				if (key[0] == "_"): continue  # Skips system arguments
+				if (key[0] == "_"):
+					continue  # Skips system arguments
 				do_advanced_expression = True
 				if (self.Unprompted.parse_advanced(key, context)):
 					if _any:
@@ -37,7 +38,8 @@ class Shortcode():
 
 			if not do_advanced_expression:
 				for key, value in kwargs.items():
-					if (key[0] == "_"): continue  # Skips system arguments
+					if (key[0] == "_"):
+						continue  # Skips system arguments
 
 					this_value = self.Unprompted.parse_advanced(value, context)
 
@@ -55,16 +57,20 @@ class Shortcode():
 					break
 
 			if ((is_true and not _not) or (_not and not is_true)):
-				if "_raw" in pargs: final_string += self.Unprompted.process_string(content, context)
-				else: final_string += self.Unprompted.process_string(self.Unprompted.sanitize_pre(content, self.Unprompted.Config.syntax.sanitize_block, True), context, False)
+				if "_raw" in pargs:
+					final_string += self.Unprompted.process_string(content, context)
+				else:
+					final_string += self.Unprompted.process_string(self.Unprompted.sanitize_pre(content, self.Unprompted.Config.syntax.sanitize_block, True), context, False)
 			else:
 				break
 
 		return (final_string)
 
 	def ui(self, gr):
-		gr.Textbox(label="Arbitrary conditional statement(s) to test against 🡢 verbatim", max_lines=1)
-		gr.Dropdown(label="Evaluation method 🡢 _is", choices=["==", "!=", "<", "<=", ">", ">="], value="==")
-		gr.Checkbox(label="Invert evaluation such that a false condition will end the loop 🡢 _not")
-		gr.Checkbox(label="Return true if any one of multiple conditions are true 🡢 _any")
-		gr.Checkbox(label="Print content without sanitizing 🡢 _raw")
+		return [
+		    gr.Textbox(label="Arbitrary conditional statement(s) to test against 🡢 arg_verbatim", max_lines=1),
+		    gr.Dropdown(label="Evaluation method 🡢 _is", choices=["==", "!=", "<", "<=", ">", ">="], value="=="),
+		    gr.Checkbox(label="Invert evaluation such that a false condition will end the loop 🡢 _not"),
+		    gr.Checkbox(label="Return true if any one of multiple conditions are true 🡢 _any"),
+		    gr.Checkbox(label="Print content without sanitizing 🡢 _raw"),
+		]

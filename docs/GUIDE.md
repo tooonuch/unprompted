@@ -251,6 +251,43 @@ Add an entry called `templates` as shown below:
 
 The asterisk wildcard represents any prompt. Restart the WebUI and you're all set!
 
+## Supercharging [replace] with additional options
+
+I would like to bring a couple pargs (positional arguments) available in `[replace]` that may improve your workflow:
+
+### _strict
+
+This will prevent `[replace]` from processing the shortcodes in your JSON values *unless* the key matches a string in your content. In other words, you need to use this if you wish to add shortcodes to your dictionary values.
+
+### _now
+
+Runs the `[replace]` operations *before* executing any shortcodes in the content. For example, let's say you have a replacement query that includes the setting of a variable:
+
+```
+	"char_john_smith" : "male, brown hair[set name='John']"
+```
+
+And you have a prompt like this:
+
+```
+char_john_smith, [get name]
+```
+
+The `[get name]` will return an empty string because it runs *before* `[replace]` sets the variable.
+
+So you must add `_now` to avoid this.
+
+Putting both options together, your config setting may look like this:
+
+```
+{
+	"templates":
+	{
+		"default":"[replace _load='user/replace.json' _now _strict]*[/replace]"
+	}
+}
+```
+
 </details>
 
 <details><summary>Using Metatags with Your [choose] Blocks</summary>

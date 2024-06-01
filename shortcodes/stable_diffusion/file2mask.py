@@ -15,8 +15,10 @@ class Shortcode():
 		self.show = True if "_show" in pargs else False
 
 		def overlay_mask_part(img_a, img_b, mode):
-			if (mode == "discard"): img_a = ImageChops.darker(img_a, img_b)
-			else: img_a = ImageChops.lighter(img_a, img_b)
+			if (mode == "discard"):
+				img_a = ImageChops.darker(img_a, img_b)
+			else:
+				img_a = ImageChops.lighter(img_a, img_b)
 			return (img_a)
 
 		def gray_to_pil(img):
@@ -24,7 +26,8 @@ class Shortcode():
 
 		def process_mask_parts(final_img=None):
 			for idx, parg in enumerate(pargs):
-				if (parg[0] == "_"): continue  # Skips system arguments
+				if (parg[0] == "_"):
+					continue  # Skips system arguments
 				filename = self.Unprompted.parse_alt_tags(parg, context)
 
 				try:
@@ -36,13 +39,15 @@ class Shortcode():
 
 				# overlay mask parts
 				gray_image = gray_to_pil(gray_image)
-				if (idx > 0 or final_img is not None): gray_image = overlay_mask_part(gray_image, final_img, "add")
+				if (idx > 0 or final_img is not None):
+					gray_image = overlay_mask_part(gray_image, final_img, "add")
 
 				final_img = gray_image
 			return (final_img)
 
 		def get_mask():
-			if "image_mask" not in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars["image_mask"] = None
+			if "image_mask" not in self.Unprompted.shortcode_user_vars:
+				self.Unprompted.shortcode_user_vars["image_mask"] = None
 
 			if (brush_mask_mode == "add" and self.Unprompted.shortcode_user_vars["image_mask"] is not None):
 				final_img = self.Unprompted.shortcode_user_vars["image_mask"].convert("RGBA")
@@ -78,6 +83,8 @@ class Shortcode():
 		return processed
 
 	def ui(self, gr):
-		gr.Textbox(label="Path to image file 🡢 str", max_lines=1)
-		gr.Radio(label="Mask blend mode 🡢 mode", choices=["add", "subtract", "discard"], value="add", interactive=True)
-		gr.Checkbox(label="Show mask in output 🡢 show")
+		return [
+		    gr.Textbox(label="Path to image file 🡢 arg_str", max_lines=1),
+		    gr.Radio(label="Mask blend mode 🡢 mode", choices=["add", "subtract", "discard"], value="add", interactive=True),
+		    gr.Checkbox(label="Show mask in output 🡢 show"),
+		]

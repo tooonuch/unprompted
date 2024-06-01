@@ -32,7 +32,8 @@ class Shortcode():
 
 		image_to_fix = self.Unprompted.current_image()
 		batch_real_index = self.Unprompted.shortcode_user_vars["batch_real_index"] if "batch_real_index" in self.Unprompted.shortcode_user_vars else 0
-		if "starting_image" in kwargs: starting_image = Image.open(self.Unprompted.parse_advanced(kwargs["starting_image"]))
+		if "starting_image" in kwargs:
+			starting_image = Image.open(self.Unprompted.parse_advanced(kwargs["starting_image"]))
 		else:
 			if hasattr(self.Unprompted.main_p, "init_images"):
 				starting_image = self.Unprompted.main_p.init_images[batch_real_index]
@@ -51,6 +52,7 @@ class Shortcode():
 			set_kwargs = kwargs
 			set_pargs = pargs
 			set_pargs.insert(0, "return_image")
+			set_pargs.append("not_img2img")
 			set_kwargs["txt2mask_init_image"] = starting_image
 			set_kwargs["precision"] = "150"
 			set_kwargs["padding"] = "0"
@@ -75,11 +77,13 @@ class Shortcode():
 			print(avg_model.cluster_centers_)
 			avg_color = avg_model.cluster_centers_[0]
 
-			if debug: self.log.debug(f"Average color: {avg_color}")
+			if debug:
+				self.log.debug(f"Average color: {avg_color}")
 
 			new_image = Image.new("RGB", starting_image.size, (int(avg_color[0]), int(avg_color[1]), int(avg_color[2])))
 			new_image.paste(starting_image, (0, 0), starting_image)
-			if debug: new_image.save("color_correct_alpha_test.png")
+			if debug:
+				new_image.save("color_correct_alpha_test.png")
 			starting_image = new_image.copy()
 
 		strength = float(kwargs["strength"]) if "strength" in kwargs else 1.0
@@ -89,7 +93,8 @@ class Shortcode():
 		if blend_lum:
 			fixed_image = blendLayers(fixed_image, orig_image, BlendType.LUMINOSITY)
 
-		if debug: fixed_image.save("color_correct_fixed_image.png")
+		if debug:
+			fixed_image.save("color_correct_fixed_image.png")
 
 		if strength < 1.0:
 			fixed_image.putalpha(int(255 * strength))
@@ -103,6 +108,8 @@ class Shortcode():
 		# self.Unprompted.after_processed.images[0] = fixed_image
 
 	def ui(self, gr):
-		gr.Dropdown(label="Method 🡢 method", choices=["hm", "mvgd", "mkl", "hm-mvgd-hm", "hm-mkl-hms"], value="mkl", interactive=True)
-		gr.Checkbox(label="Blend luminosity? 🡢 blend_lum", value=False)
-		gr.Checkbox(label="Debug mode 🡢 debug", value=False)
+		return [
+		    gr.Dropdown(label="Method 🡢 method", choices=["hm", "mvgd", "mkl", "hm-mvgd-hm", "hm-mkl-hms"], value="mkl", interactive=True),
+		    gr.Checkbox(label="Blend luminosity? 🡢 blend_lum", value=False),
+		    gr.Checkbox(label="Debug mode 🡢 debug", value=False),
+		]

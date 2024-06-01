@@ -1,0 +1,2 @@
+[set stylebook_subject]origami style [get stylebook_subject] . paper art, pleated paper, folded, origami art, pleats, cut and fold, centered composition[/set]
+[set stylebook_negative]noisy, sloppy, messy, grainy, highly detailed, ultra textured, photo[/set]

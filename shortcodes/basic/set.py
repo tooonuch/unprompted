@@ -11,7 +11,8 @@ class Shortcode():
 		overrides = self.Unprompted.shortcode_objects["overrides"]
 		can_set = True
 
-		if (content is None or len(content) < 1): return ""
+		if (content is None or len(content) < 1) and "_allow_empty" not in pargs:
+			return ""
 
 		key = self.Unprompted.parse_alt_tags(pargs[0], context)
 
@@ -31,15 +32,27 @@ class Shortcode():
 			if key in self.Unprompted.shortcode_user_vars:
 				# Check if this var already holds a valid value, if not we will set it
 				if "_choices" in kwargs:
-					if str(self.Unprompted.shortcode_user_vars[key]) in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter): can_set = False
-				else: can_set = False
+					if str(self.Unprompted.shortcode_user_vars[key]) in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter):
+						can_set = False
+				else:
+					can_set = False
 		elif "_choices" in kwargs:
-			if str(content) not in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter): can_set = False
+			if str(content) not in self.Unprompted.parse_advanced(kwargs["_choices"], context).split(self.Unprompted.Config.syntax.delimiter):
+				can_set = False
 
 		if can_set:
-			if "_append" in pargs and key in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars[key] += content
-			elif "_prepend" in pargs and key in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars[key] = content + self.Unprompted.shortcode_user_vars[key]
-			else: self.Unprompted.shortcode_user_vars[key] = content
+			if (content is None or content == ""):
+				if "_allow_empty" in pargs:
+					self.Unprompted.log.debug(f"setting {pargs[0]} to empty")
+					self.Unprompted.shortcode_user_vars[self.Unprompted.parse_alt_tags(pargs[0], context)] = ""
+				return ""
+
+			if "_append" in pargs and key in self.Unprompted.shortcode_user_vars:
+				self.Unprompted.shortcode_user_vars[key] += content
+			elif "_prepend" in pargs and key in self.Unprompted.shortcode_user_vars:
+				self.Unprompted.shortcode_user_vars[key] = content + self.Unprompted.shortcode_user_vars[key]
+			else:
+				self.Unprompted.shortcode_user_vars[key] = content
 
 			self.log.debug(f"Setting {key} to {self.Unprompted.shortcode_user_vars[key]}")
 
@@ -58,14 +71,18 @@ class Shortcode():
 			with open(filepath, "w", encoding=self.Unprompted.Config.formats.default_encoding) as f:
 				json.dump(json_obj, f, ensure_ascii=False)
 
-		if ("_out" in pargs): return (self.Unprompted.shortcode_user_vars[key])
-		else: return ("")
+		if ("_out" in pargs):
+			return (self.Unprompted.shortcode_user_vars[key])
+		else:
+			return ("")
 
 	def ui(self, gr):
-		gr.Textbox(label="Variable name 🡢 verbatim", max_lines=1)
-		gr.Checkbox(label="Only set this variable if it doesn't already exist 🡢 _new")
-		gr.Textbox(label="Array of valid values (used in conjunction with _new) 🡢 _choices")
-		gr.Checkbox(label="Append the content to the variable's current value 🡢 _append")
-		gr.Checkbox(label="Prepend the content to the variable's current value 🡢 _prepend")
-		gr.Checkbox(label="Store content without sanitizing 🡢 _raw")
-		gr.Checkbox(label="Print the variable's value 🡢 _out")
+		return [
+		    gr.Textbox(label="Variable name 🡢 arg_verbatim", max_lines=1),
+		    gr.Checkbox(label="Only set this variable if it doesn't already exist 🡢 _new"),
+		    gr.Textbox(label="Array of valid values (used in conjunction with _new) 🡢 _choices"),
+		    gr.Checkbox(label="Append the content to the variable's current value 🡢 _append"),
+		    gr.Checkbox(label="Prepend the content to the variable's current value 🡢 _prepend"),
+		    gr.Checkbox(label="Store content without sanitizing 🡢 _raw"),
+		    gr.Checkbox(label="Print the variable's value 🡢 _out"),
+		]

@@ -1,0 +1,2 @@
+[set stylebook_subject]cinematic film still [get stylebook_subject] . shallow depth of field, vignette, highly detailed, high budget Hollywood movie, bokeh, cinemascope, moody, epic, gorgeous, film grain, grainy[/set]
+[set stylebook_negative]anime, cartoon, graphic, text, painting, crayon, graphite, abstract, glitch, deformed, mutated, ugly, disfigured[/set]

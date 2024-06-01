@@ -15,6 +15,7 @@ from .gpen_model import FullGenerator, FullGenerator_SR
 
 class FaceGAN(object):
 	def __init__(self, base_dir='./', in_size=512, out_size=None, model=None, channel_multiplier=2, narrow=1, key=None, is_norm=True, device='cuda'):
+		print("Initializing FaceGAN...")
 		self.mfile = os.path.join(base_dir, 'gpen', model + '.pth')
 		self.n_mlp = 8
 		self.device = device
@@ -30,7 +31,8 @@ class FaceGAN(object):
 		else:
 			self.model = FullGenerator_SR(self.in_resolution, self.out_resolution, 512, self.n_mlp, channel_multiplier, narrow=narrow, device=self.device)
 		pretrained_dict = torch.load(self.mfile, map_location=torch.device('cpu'))
-		if self.key is not None: pretrained_dict = pretrained_dict[self.key]
+		if self.key is not None:
+			pretrained_dict = pretrained_dict[self.key]
 		self.model.load_state_dict(pretrained_dict)
 		self.model.to(self.device)
 		self.model.eval()

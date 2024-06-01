@@ -1,6 +1,6 @@
 [if sd_base="sdxl"]
 	[sets width=768 height=768]
 [/if]
-[elif sd_base="sd15"]
+[elif sd_base="sd1"]
 	[sets width=384 height=384]
 [/elif]

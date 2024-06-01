@@ -1,0 +1,2 @@
+[set stylebook_subject]analog film photo [get stylebook_subject] . faded film, desaturated, 35mm photo, grainy, vignette, vintage, Kodachrome, Lomography, stained, highly detailed, found footage[/set]
+[set stylebook_negative]painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured[/set]

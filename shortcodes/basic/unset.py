@@ -15,4 +15,6 @@ class Shortcode():
 		return ("")
 
 	def ui(self, gr):
-		gr.Textbox(label="Arbitrary variable names to free from memory 🡢 verbatim", max_lines=1, placeholder='my_var another_var')
+		return [
+		    gr.Textbox(label="Arbitrary variable names to free from memory 🡢 arg_verbatim", max_lines=1, placeholder='my_var another_var'),
+		]

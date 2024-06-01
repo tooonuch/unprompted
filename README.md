@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://user-images.githubusercontent.com/95403634/206286547-53f22ebf-e5fc-4bbd-8bad-53b9cb17ae64.png">
+<img src="./images/unprompted_banner.png">
 </p>
 
 <p align="center"><strong>Links:</strong> 📣 <a href="./docs/ANNOUNCEMENTS.md">Announcements</a> | 📘 <a href="./docs/MANUAL.md">Manual</a> | ⏱ <a href="./docs/CHANGELOG.md">Changelog</a> | 🎓 <a href="./docs/GUIDE.md">Starter Guide</a></p>

@@ -1,0 +1,2 @@
+[set stylebook_subject]neonpunk style [get stylebook_subject] . cyberpunk, vaporwave, neon, vibes, vibrant, stunningly beautiful, crisp, detailed, sleek, ultramodern, magenta highlights, dark purple shadows, high contrast, cinematic, ultra detailed, intricate, professional[/set]
+[set stylebook_negative]painting, drawing, illustration, glitch, deformed, mutated, cross-eyed, ugly, disfigured[/set]

@@ -1,23 +1,23 @@
 class Shortcode():
-	def __init__(self,Unprompted):
+	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Cast the content to a given datatype."
 
 	def run_block(self, pargs, kwargs, context, content):
 		if len(pargs):
-			datatype = self.Unprompted.parse_alt_tags(pargs[0],context)
+			datatype = self.Unprompted.parse_alt_tags(pargs[0], context)
 
 			def to_int(val):
 				return int(float(val))
 
 			valid_functions = {
-				"int": to_int,
-				"float": float,
-				"str": str,
-				"bool": bool,
-				"list": list,
-				"dict": dict,
-				# Add more casting functions as needed
+			    "int": to_int,
+			    "float": float,
+			    "str": str,
+			    "bool": bool,
+			    "list": list,
+			    "dict": dict,
+			    # Add more casting functions as needed
 			}
 
 			try:
@@ -34,5 +34,7 @@ class Shortcode():
 			self.log.error("No datatype specified - returning `content` unchanged.")
 			return content
 
-	def ui(self,gr):
-		gr.Textbox(label="New datatype 🡢 str",choices=["str","int","float","bool","list","dict"],default="str")
+	def ui(self, gr):
+		return [
+		    gr.Textbox(label="New datatype 🡢 arg_str", choices=["str", "int", "float", "bool", "list", "dict"], default="str"),
+		]

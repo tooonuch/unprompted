@@ -1,7 +1,8 @@
 import random
 
+
 class Shortcode():
-	def __init__(self,Unprompted):
+	def __init__(self, Unprompted):
 		import lib_unprompted.helpers as helpers
 		self.Unprompted = Unprompted
 		self.description = "Adjusts the dimensions of a given image with scaling or cropping."
@@ -10,22 +11,23 @@ class Shortcode():
 	def run_atomic(self, pargs, kwargs, context):
 		from PIL import Image
 
-		image_orig = self.Unprompted.parse_alt_tags(pargs[0],context) if len(pargs) else self.Unprompted.current_image()
-		width = self.Unprompted.parse_arg("width",0)
-		height = self.Unprompted.parse_arg("height",0)
+		image_orig = self.Unprompted.parse_alt_tags(pargs[0], context) if len(pargs) else self.Unprompted.current_image()
+		width = self.Unprompted.parse_arg("width", 0)
+		height = self.Unprompted.parse_arg("height", 0)
 		# TODO: Figure out why this isn't working with the parse_arg function
-		min_width = int(float(kwargs["min_width"]) if "min_width" in kwargs else 0)# self.Unprompted.parse_arg("min_width",-1)
-		min_height = int(float(kwargs["min_height"]) if "min_height" in kwargs else 0)# self.Unprompted.parse_arg("min_height",-1)
-		unit = self.Unprompted.parse_arg("unit","px")
-		keep_ratio = self.Unprompted.parse_arg("keep_ratio",True)
-		technique = self.Unprompted.parse_arg("technique","scale")
-		resample_method = self.resample_methods[self.Unprompted.parse_arg("resample_method","Lanczos")]
-		origin = self.Unprompted.parse_arg("origin","middle_center")
-		save_out = self.Unprompted.parse_arg("save_out","")
+		min_width = int(float(kwargs["min_width"]) if "min_width" in kwargs else 0)  # self.Unprompted.parse_arg("min_width",-1)
+		min_height = int(float(kwargs["min_height"]) if "min_height" in kwargs else 0)  # self.Unprompted.parse_arg("min_height",-1)
+		unit = self.Unprompted.parse_arg("unit", "px")
+		keep_ratio = self.Unprompted.parse_arg("keep_ratio", True)
+		technique = self.Unprompted.parse_arg("technique", "scale")
+		resample_method = self.resample_methods[self.Unprompted.parse_arg("resample_method", "Lanczos")]
+		origin = self.Unprompted.parse_arg("origin", "middle_center")
+		save_out = self.Unprompted.parse_arg("save_out", "")
 
-		if isinstance(image_orig,str):
+		if isinstance(image_orig, str):
 			image = Image.open(image_orig)
-		else: image = image_orig
+		else:
+			image = image_orig
 
 		if unit == "%":
 			width = int(image.width * width)
@@ -64,7 +66,7 @@ class Shortcode():
 		# Resize image if dimensions have changed
 		if new_width != image.width or new_height != image.height:
 			if technique == "scale":
-				image = image.resize((new_width,new_height),resample=resample_method)
+				image = image.resize((new_width, new_height), resample=resample_method)
 			elif technique == "crop":
 				# Verify that image is larger than new dimensions
 				if image.width < new_width or image.height < new_height:
@@ -73,23 +75,23 @@ class Shortcode():
 
 				# Determine bounding box based on `origin`
 				if origin == "top_left":
-					bbox = (0,0,new_width,new_height)
+					bbox = (0, 0, new_width, new_height)
 				elif origin == "top_center":
-					bbox = (int((image.width - new_width) / 2),0,int((image.width - new_width) / 2) + new_width,new_height)
+					bbox = (int((image.width - new_width) / 2), 0, int((image.width - new_width) / 2) + new_width, new_height)
 				elif origin == "top_right":
-					bbox = (image.width - new_width,0,image.width,new_height)
+					bbox = (image.width - new_width, 0, image.width, new_height)
 				elif origin == "middle_left":
-					bbox = (0,int((image.height - new_height) / 2),new_width,int((image.height - new_height) / 2) + new_height)
+					bbox = (0, int((image.height - new_height) / 2), new_width, int((image.height - new_height) / 2) + new_height)
 				elif origin == "middle_center":
-					bbox = (int((image.width - new_width) / 2),int((image.height - new_height) / 2),int((image.width - new_width) / 2) + new_width,int((image.height - new_height) / 2) + new_height)
+					bbox = (int((image.width - new_width) / 2), int((image.height - new_height) / 2), int((image.width - new_width) / 2) + new_width, int((image.height - new_height) / 2) + new_height)
 				elif origin == "middle_right":
-					bbox = (image.width - new_width,int((image.height - new_height) / 2),image.width,int((image.height - new_height) / 2) + new_height)
+					bbox = (image.width - new_width, int((image.height - new_height) / 2), image.width, int((image.height - new_height) / 2) + new_height)
 				elif origin == "bottom_left":
-					bbox = (0,image.height - new_height,new_width,image.height)
+					bbox = (0, image.height - new_height, new_width, image.height)
 				elif origin == "bottom_center":
-					bbox = (int((image.width - new_width) / 2),image.height - new_height,int((image.width - new_width) / 2) + new_width,image.height)
+					bbox = (int((image.width - new_width) / 2), image.height - new_height, int((image.width - new_width) / 2) + new_width, image.height)
 				elif origin == "bottom_right":
-					bbox = (image.width - new_width,image.height - new_height,image.width,image.height)
+					bbox = (image.width - new_width, image.height - new_height, image.width, image.height)
 				else:
 					self.log.error(f"Invalid origin `{origin}`. Skipping crop.")
 					return ""
@@ -100,26 +102,31 @@ class Shortcode():
 			if not len(pargs):
 				# Update current image
 				self.Unprompted.current_image(image)
-			if isinstance(image_orig,str) or save_out:
+			if isinstance(image_orig, str) or save_out:
 				# Save image to file
-				if save_out: image.save(save_out)
-				else: image.save(image_orig)
+				if save_out:
+					image.save(save_out)
+				else:
+					image.save(image_orig)
 		else:
 			self.log.info("Image dimensions unchanged. Skipping resize.")
 
 		return ""
 
-	def ui(self,gr):
-		gr.Textbox(label="Path to image (uses SD image by default) 🡢 str")
-		gr.Textbox(label="Save result to a different path (optional) 🡢 save_out")
+	def ui(self, gr):
+		objs = []
+		objs.append(gr.Textbox(label="Path to image (uses SD image by default) 🡢 arg_str"))
+		objs.append(gr.Textbox(label="Save result to a different path (optional) 🡢 save_out"))
 		with gr.Row():
-			gr.Number(label="New width 🡢 width")
-			gr.Number(label="New height 🡢 height")
-			gr.Dropdown(label="Unit 🡢 unit",choices=["px","%"],value="px")
-		gr.Dropdown(label="Technique 🡢 technique", value="scale", choices=["scale","crop"], interactive=True)
-		gr.Dropdown(label="Resample Method 🡢 resample_method", value="Lanczos", choices=list(self.resample_methods.keys()), interactive=True)
-		gr.Dropdown(label="Crop Origin 🡢 origin", value="middle_center", choices=["top_left","top_center","top_right","middle_left","middle_center","middle_right","bottom_left","bottom_center","bottom_right"], interactive=True)
-		gr.Checkbox(label="Maintain aspect ratio 🡢 keep_ratio",value=True)
+			objs.append(gr.Number(label="New width 🡢 width"))
+			objs.append(gr.Number(label="New height 🡢 height"))
+			objs.append(gr.Dropdown(label="Unit 🡢 unit", choices=["px", "%"], value="px"))
+		objs.append(gr.Dropdown(label="Technique 🡢 technique", value="scale", choices=["scale", "crop"], interactive=True))
+		objs.append(gr.Dropdown(label="Resample Method 🡢 resample_method", value="Lanczos", choices=list(self.resample_methods.keys()), interactive=True))
+		objs.append(gr.Dropdown(label="Crop Origin 🡢 origin", value="middle_center", choices=["top_left", "top_center", "top_right", "middle_left", "middle_center", "middle_right", "bottom_left", "bottom_center", "bottom_right"], interactive=True))
+		objs.append(gr.Checkbox(label="Maintain aspect ratio 🡢 keep_ratio", value=True))
 		with gr.Row():
-			gr.Number(label="Minimum width of resulting image 🡢 min_width",value=0)
-			gr.Number(label="Minimum height of resulting image 🡢 min_height",value=0)
+			objs.append(gr.Number(label="Minimum width of resulting image 🡢 min_width", value=0))
+			objs.append(gr.Number(label="Minimum height of resulting image 🡢 min_height", value=0))
+
+		return objs

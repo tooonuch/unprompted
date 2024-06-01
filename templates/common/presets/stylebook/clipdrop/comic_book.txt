@@ -1,0 +1,2 @@
+[set stylebook_subject]comic [get stylebook_subject] . graphic illustration, comic art, graphic novel art, vibrant, highly detailed[/set]
+[set stylebook_negative]photograph, deformed, glitch, noisy, realistic, stock photo[/set]

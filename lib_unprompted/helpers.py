@@ -99,11 +99,64 @@ def str_to_rgb(color_string):
 		return bytes.fromhex(color_string[1:])
 
 
+def str_to_pil(string):
+	log = get_logger()
+
+	if isinstance(string, str) and string.startswith("<PIL.Image.Image"):
+		# Get the PIL object from the memory address
+		# <PIL.Image.Image image mode=RGBA size=1024x1024 at 0x2649930D270>
+
+		try:
+			import ctypes
+			import re
+			from PIL import Image
+
+			# Extract the memory address from the string
+			address = re.search(r"at (0x[0-9A-F]+)", string).group(1)
+
+			# Convert the memory address to an integer
+			address = int(address, 16)
+
+			# Create a ctypes pointer to the memory address.
+			img = ctypes.cast(address, ctypes.py_object).value
+
+			# Validate the object
+			if not isinstance(img, Image.Image):
+				log.error(f"Failed to extract PIL image from memory address: {address}, {string}, {type(img)}")
+				return False
+
+			log.debug(f"Successfully extracted PIL image from memory address: {img}")
+			return img
+		except:
+			log.exception(f"Failed to extract PIL image from memory address: {string}")
+			return False
+	else:
+		try:
+			import glob, random, os
+			files = glob.glob(string)
+			if (len(files) == 0):
+				log.error(f"No files found at this location: {string}")
+				return ("")
+			file = random.choice(files)
+
+			log.debug(f"Loading file: {file}")
+
+			if not os.path.exists(file):
+				log.error(f"File does not exist: {file}")
+				return False
+
+			img = Image.open(string)
+			return img
+		except:
+			log.exception(f"Failed to open image: {string}")
+			return False
+
+
 def get_logger(logger=None):
 	if not logger:
 		try:
 			import logging
-			logger = logging.getLogger("Unprompted").info
+			logger = logging.getLogger("Unprompted")
 		except:
 			logger = print
 	return logger
@@ -118,16 +171,19 @@ def download_file(filename, url, logger=None, overwrite=False, headers=None):
 		# Make sure directory structure exists
 		os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
 
-		log(f"Downloading file into: {filename}...")
+		log.info(f"Downloading file into: {filename}...")
 		response = requests.get(url, stream=True, headers=headers)
 		if response.status_code != 200:
-			log(f"Problematic status code received: {response.status_code}")
+			log.error(f"Error when trying to download `{url}` to `{filename}`. Dtatus code received: {response.status_code}")
 			return False
-		with open(filename, 'wb') as fout:
-			# response.raise_for_status()
-			# Write response data to file
-			for block in response.iter_content(4096):
-				fout.write(block)
+		try:
+			with open(filename, 'wb') as fout:
+				for block in response.iter_content(4096):
+					fout.write(block)
+		except:
+			log.exception(f"Error when writing download to `{filename}`.")
+			return False
+
 	return True
 
 

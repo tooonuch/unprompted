@@ -10,7 +10,7 @@ class Shortcode():
 		if "_all_external" in kwargs:
 			import json
 
-			filepath = self.Unprompted.parse_filepath(helpers.str_with_ext(kwargs["_all_external"]),root=self.Unprompted.base_dir,must_exist=False)
+			filepath = self.Unprompted.parse_filepath(helpers.str_with_ext(kwargs["_all_external"]), root=self.Unprompted.base_dir, must_exist=False)
 			json_obj = helpers.create_load_json(filepath, encoding=self.Unprompted.Config.formats.default_encoding)
 
 			# Merge changes with shortcode_user_vars
@@ -21,7 +21,8 @@ class Shortcode():
 
 		# Populate a dict of system args to pass off to [set]
 		for key, value in kwargs.items():
-			if (self.Unprompted.is_system_arg(key)): system_kwargs[key] = value
+			if (self.Unprompted.is_system_arg(key)):
+				system_kwargs[key] = value
 
 		if "_load" in kwargs:
 			jsons = self.Unprompted.load_jsons(self.Unprompted.parse_advanced(kwargs["_load"], context), context)
@@ -38,4 +39,6 @@ class Shortcode():
 		return ("")
 
 	def ui(self, gr):
-		gr.Textbox(label="Arbitrary arguments in variable=value format 🡢 verbatim", max_lines=1, placeholder='my_var="something" another_var=56')
+		return [
+		    gr.Textbox(label="Arbitrary arguments in variable=value format 🡢 arg_verbatim", max_lines=1, placeholder='my_var="something" another_var=56'),
+		]

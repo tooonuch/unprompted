@@ -1,0 +1,2 @@
+[set stylebook_subject]line art drawing [get stylebook_subject] . professional, sleek, modern, minimalist, graphic, line art, vector graphics[/set]
+[set stylebook_negative]anime, photorealistic, 35mm film, deformed, glitch, blurry, noisy, off-center, deformed, cross-eyed, closed eyes, bad anatomy, ugly, disfigured, mutated, realism, realistic, impressionism, expressionism, oil, acrylic[/set]

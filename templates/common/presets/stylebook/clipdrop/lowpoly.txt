@@ -1,0 +1,2 @@
+[set stylebook_subject]low-poly style [get stylebook_subject] . low-poly game art, polygon mesh, jagged, blocky, wireframe edges, centered composition[/set]
+[set stylebook_negative]noisy, sloppy, messy, grainy, highly detailed, ultra textured, photo[/set]

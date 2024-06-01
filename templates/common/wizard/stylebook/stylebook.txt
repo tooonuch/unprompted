@@ -1,0 +1,34 @@
+[template name="Stylebook v0.1.0" id="stylebook"]
+[wizard tab _label="About"]
+	[wizard markdown]
+		Apply hand-crafted styles to your prompts using presets.
+	[/wizard]
+[/wizard]
+[wizard tab _label="Documentation"]
+	[wizard markdown]
+		Coming Soon
+	[/wizard]
+[/wizard]
+[wizard tab _label="Changelog"]
+	[wizard markdown _file="CHANGELOG.md"][/wizard]
+[/wizard]
+
+[set stylebook_subject _new _label="Subject"]Cute robot character[/set]
+
+[set stylebook_preset _new _multiselect _info="May download extra dependencies on first use." _ui="dropdown" _choices="{filelist '%BASE_DIR%/templates/%PLACE%/presets/stylebook/**/*.txt' _basename _hide_ext _recursive _places='user|common'}" _label="Style(s)"]surreal_watercolor[/set]
+
+[wizard accordion _label="⚙️ Advanced Settings"]
+	[set stylebook_do_negative _new _info="Allows Stylebook to adjust the negative prompt style." _ui="checkbox" _label="Negative Style"]1[/set]
+	[set stylebook_do_extra _new _info="Allows Stylebook to load extra networks such as LORAs." _ui="checkbox" _label="Extra Style"]1[/set]
+[/wizard]
+
+[for i=0 "i < {length stylebook_preset}" "i+1"]
+	[call "/presets/stylebook/{array stylebook_preset i}" _places="user|common" ]
+[/for]
+
+[# Print the combined stylebook prompt]
+[get stylebook_subject]
+
+[if "stylebook_do_negative"]
+	[set negative_prompt _append][get stylebook_negative][/set]
+[/if]

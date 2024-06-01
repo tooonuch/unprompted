@@ -1,0 +1,3 @@
+[wizard tab _label="About"]
+	[markdown][call "./distillery_about.md"][/markdown]
+[/wizard]

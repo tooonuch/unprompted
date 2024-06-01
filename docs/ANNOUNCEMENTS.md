@@ -1,6 +1,90 @@
 # Unprompted Announcements
 Stay informed on the latest Unprompted news and updates.
 
+<details><summary>Workflows Are Here! — 31 May 2024</summary>
+
+Hi folks,
+
+I'm pleased to announce the release of Unprompted v11, which is possibly the biggest update since version one.
+
+Let's dive into some of the new features:
+
+### Workflows
+
+In Unprompted, you can chain together various shortcodes and templates through the Wizard UI. But what if you want to save your configuration for future use? Now you can, using **workflows!**
+
+This new feature exports your active shortcodes and templates into a consolidated JSON file. You can give it a unique name and even share it with others, much like you can do in ComfyUI.
+
+Since workflows are saved as JSON, you can quickly and efficiently tweak them in your favorite text editor. Changes are reflected in the WebUI upon re-loading the template.
+
+### Streamlined Documentation
+
+Although I have spent a great deal of time on Unprompted's documentation, the manual was tricky to navigate and sometimes overlooked altogether.
+
+In Unprompted v11, I have migrated all of the shortcode docs to [standalone markdown files](https://github.com/ThereforeGames/unprompted/tree/main/docs/shortcodes), which are available inside of the Wizard GUI in the new `Documentation` tabs:
+
+![docs]([base_dir]/images/posts/11.0.0/docs.png)
+
+Similarly, Wizard templates now have tabs for `About`, `Documentation`, and `Changelog`, which I hope will make it a lot easier to find the information you're looking for.
+
+### Bodysnatcher Upgrade
+
+The Bodysnatcher template has received numerous updates, including:
+
+- Better support for SDXL.
+- Smarter image interrogation, such that it only describes the masked subject instead of the entire input image.
+- New presets and bug fixes.
+
+![bodysnatcher]([base_dir]/images/posts/11.0.0/bodysnatcher.png)
+
+Bodysnatcher is my goto tool for hassle-free inpainting. Give it a try with still-life subjects, too!
+
+### GPEN Optimizations
+
+GPEN is widely considered the best face restoration technique available right now. I have gone to some lengths optimizing this pipeline for Unprompted, resulting in much faster inference times - anecdotally, it's down from ~5s to ~0.3s with all caching features enabled on my GeForce 3090.
+
+As far as I know, this is the most efficient implementation of GPEN out there, and the results look fantastic.
+
+![gpeno]([base_dir]/images/posts/11.0.0/gpeno.png)
+
+### Smarter Dependency Handling
+
+As a swiss army knife for Stable Diffusion, Unprompted has accumulated a lot of extra dependencies.
+
+The `requirements.txt` file was becoming unwieldy, leading to long startup times. You can use the `Config.skip_requirements` setting as a workaround, but this is an all-or-nothing approach - we can do better.
+
+In v11, Unprompted will now check for/install missing dependencies **only when needed.** For example, if you don't have the `ultralytics` module required by `[txt2mask]`, Unprompted will not attempt to download it until you use `[txt2mask]` in a prompt.
+
+### The `[image_edit]` Block
+
+Unprompted has a few tools for modifying images, such as `[autotone]` and `[resize]`. For the sake of simplicity, I have decided to consolidate these features into a single powerful `[image_edit]` shortcode.
+
+This block is super flexible - you can perform multiple operations on your image in a single call, e.g.:
+
+```
+[image_edit width=768 height=1024 mask="C:/some/picture.png" paste="C:/another/picture.png"]
+```
+
+It will also respect the order of operations of your arguments, making it quite useful as a code-based image editor.
+
+Future updates will extend the shortcode with support for various other operations.
+
+### Enhanced shortcode behaviors and much more
+
+I know "much more" is a cliché, but it's true! I encourage you to [check out the changelog](https://github.com/ThereforeGames/unprompted/blob/main/docs/CHANGELOG.md) for all the details, such as:
+
+- Greatly improved UI performance by eliminating many Gradio event listeners
+- Dozens of new options for existing shortcodes
+- Updates for most of the included templates
+- Special string macros `%SPACE%` and `%NEWLINE%` for fine control over the resulting prompt
+- Wizard UI improvements
+
+---
+
+I hope you enjoy the patch, and thank you for your continued support!
+
+</details>
+
 <details><summary>Beefier Auto-Includes — 25 April 2024</summary>
 
 Hi folks,

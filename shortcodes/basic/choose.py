@@ -48,7 +48,8 @@ class Shortcode():
 						elif isinstance(this_weight, float):
 							probability = (this_weight % 1)
 							this_weight = int(this_weight)
-							if (probability >= random.uniform(0, 1)): this_weight += 1
+							if (probability >= random.uniform(0, 1)):
+								this_weight += 1
 
 					if not checking_weight:
 						for x in range(0, this_weight):
@@ -60,7 +61,8 @@ class Shortcode():
 
 			times = 1
 			for parg in pargs:
-				if self.Unprompted.is_system_arg(parg): continue
+				if self.Unprompted.is_system_arg(parg):
+					continue
 				times = self.Unprompted.parse_advanced(parg, context)
 				break
 
@@ -84,8 +86,10 @@ class Shortcode():
 		return self.Unprompted.parse_alt_tags(final_string, context)
 
 	def ui(self, gr):
-		gr.Number(label="Number of times to choose 🡢 int", value=1, interactive=True)
-		gr.Textbox(label="String delimiter when returning more than one choice 🡢 _sep", max_lines=1, placeholder=", ")
-		gr.Checkbox(label="Custom weight per option 🡢 _weighted")
-		gr.Checkbox(label="Do not process inner shortcodes except the selected one 🡢 _raw")
-		gr.Number(label="Override random nature of shortcode with predetermined outcome 🡢 _case", value=-1, interactive=True)
+		return [
+		    gr.Number(label="Number of times to choose 🡢 arg_int", value=1, interactive=True),
+		    gr.Textbox(label="String delimiter when returning more than one choice 🡢 _sep", max_lines=1, placeholder=", "),
+		    gr.Checkbox(label="Custom weight per option 🡢 _weighted"),
+		    gr.Checkbox(label="Do not process inner shortcodes except the selected one 🡢 _raw"),
+		    gr.Number(label="Override random nature of shortcode with predetermined outcome 🡢 _case", value=-1, interactive=True),
+		]

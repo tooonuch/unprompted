@@ -28,15 +28,19 @@ class Shortcode():
 		if "no_sync" not in pargs:
 			self.Unprompted.update_stable_diffusion_vars(self.Unprompted.main_p)
 
-		if "mask_mode" not in self.Unprompted.shortcode_user_vars: self.Unprompted.shortcode_user_vars["mask_mode"] = 0
+		if "mask_mode" not in self.Unprompted.shortcode_user_vars:
+			self.Unprompted.shortcode_user_vars["mask_mode"] = 0
 		init_mask = None
-		if "init_mask" in self.Unprompted.shortcode_user_vars: init_mask = self.Unprompted.shortcode_user_vars["init_mask"]
-		elif "init_mask_inpaint" in self.Unprompted.shortcode_user_vars: init_mask = self.Unprompted.shortcode_user_vars["init_mask_inpaint"]
+		if "init_mask" in self.Unprompted.shortcode_user_vars:
+			init_mask = self.Unprompted.shortcode_user_vars["init_mask"]
+		elif "init_mask_inpaint" in self.Unprompted.shortcode_user_vars:
+			init_mask = self.Unprompted.shortcode_user_vars["init_mask_inpaint"]
 
 		init_img_with_mask = self.Unprompted.shortcode_user_vars["init_img_with_mask"] if "init_img_with_mask" in self.Unprompted.shortcode_user_vars else None
 
 		for att in self.Unprompted.shortcode_user_vars:
-			if att.startswith("controlnet_") or att.startswith("cn_"): self.Unprompted.update_controlnet_var(self.Unprompted.main_p, att)
+			if att.startswith("controlnet_") or att.startswith("cn_"):
+				self.Unprompted.update_controlnet_var(self.Unprompted.main_p, att)
 
 		# this just sets up the starting image for the img2img operation
 		# storing a copy of the image array into this class instance as it seems the order of the images
@@ -273,4 +277,6 @@ class Shortcode():
 		return ""
 
 	def ui(self, gr):
-		gr.Slider(label="Img2Img Ratio (if value is other than 1, it is used over the height and width supplied) 🡢 ratio", value=1.0, maximum=3, minimum=0.25, interactive=True, step=0.01)
+		return [
+		    gr.Slider(label="Img2Img Ratio (if value is other than 1, it is used over the height and width supplied) 🡢 ratio", value=1.0, maximum=3, minimum=0.25, interactive=True, step=0.01),
+		]

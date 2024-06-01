@@ -1,0 +1,2 @@
+[set stylebook_subject]pixel-art [get stylebook_subject] . low-res, blocky, pixel art style, 8-bit graphics[/set]
+[set stylebook_negative]sloppy, messy, blurry, noisy, highly detailed, ultra textured, photo, realistic[/set]

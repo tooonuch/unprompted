@@ -24,9 +24,7 @@ class Shortcode():
 
 	def run_atomic(self, pargs, kwargs, context):
 		import cv2, numpy, math
-		from modules import devices, sd_models, shared
 		from PIL import Image, ImageFilter, ImageChops, ImageOps
-		from blendmodes.blend import blendLayers, BlendType
 		from lib_unprompted.simpleeval import simple_eval
 		import lib_unprompted.helpers as helpers
 
@@ -34,13 +32,14 @@ class Shortcode():
 		if "no_sync" not in pargs:
 			self.Unprompted.update_stable_diffusion_vars(self.Unprompted.main_p)
 
-		orig_batch_size = self.Unprompted.shortcode_user_vars["batch_size"]
 		self.Unprompted.shortcode_user_vars["batch_index"] = 0
 		self.Unprompted.main_p.batch_index = 0
 
 		try:
-			if self.Unprompted.short_code_user_vars["sd_base"] == "sdxl": default_mask_size = 1024
-			else: default_mask_size = 512
+			if self.Unprompted.short_code_user_vars["sd_base"] == "sdxl":
+				default_mask_size = 1024
+			else:
+				default_mask_size = 512
 		except:  # temporary workaround for sd.next not supporting these variables
 			default_mask_size = 1024
 			pass
@@ -55,8 +54,10 @@ class Shortcode():
 		upscale_min = upscale_min * (default_mask_size**2)  # Scale the minimum area up depending on the canvas size
 		bypass_adaptive_hires = self.Unprompted.parse_arg("bypass_adaptive_hires", False)
 
-		if upscale_width == -1: upscale_width = default_mask_size
-		if upscale_height == -1: upscale_height = default_mask_size
+		if upscale_width == -1:
+			upscale_width = default_mask_size
+		if upscale_height == -1:
+			upscale_height = default_mask_size
 
 		self.log.debug(f"The upscale_min for this image is {upscale_min}")
 
@@ -145,6 +146,7 @@ class Shortcode():
 		set_pargs = pargs
 		set_kwargs = kwargs
 		set_pargs.insert(0, "return_image")  # for [txt2mask]
+		set_pargs.append("not_img2img")  # for [txt2mask]
 
 		append_originals = []
 
@@ -165,7 +167,8 @@ class Shortcode():
 		self.Unprompted.main_p.all_prompts = all_replacements
 		self.Unprompted.main_p.all_negative_prompts = all_negative_replacements
 
-		if show_original: append_originals.append(image_pil.copy())
+		if show_original:
+			append_originals.append(image_pil.copy())
 
 		# Workaround for compatibility between [after] block and batch processing
 		if "width" not in self.Unprompted.shortcode_user_vars:
@@ -205,18 +208,21 @@ class Shortcode():
 			self.log.debug(f"Upscale size, accounting for original image: {upscale_width}")
 
 		image = numpy.array(image_pil)
-		if starting_image: starting_image = starting_image.resize((image_pil.size[0], image_pil.size[1]))
+		if starting_image:
+			starting_image = starting_image.resize((image_pil.size[0], image_pil.size[1]))
 
 		if debug:
 			self.log.warning("Since you are using the debug flag, Zoom Enhance will save test images to the root of your WebUI folder - don't forget!")
 			image_pil.save(f"zoom_enhance_img{image_idx}_0_starting_image.png")
 
-		if "mask_method" in kwargs: set_kwargs["method"] = self.Unprompted.parse_alt_tags(kwargs["mask_method"], context)
+		if "mask_method" in kwargs:
+			set_kwargs["method"] = self.Unprompted.parse_alt_tags(kwargs["mask_method"], context)
 
 		set_kwargs["txt2mask_init_image"] = image_pil
 		mask_image = self.Unprompted.shortcode_objects["txt2mask"].run_block(set_pargs, set_kwargs, None, target_mask)
 
-		if debug: mask_image.save(f"zoom_enhance_img{image_idx}_1_mask_image.png")
+		if debug:
+			mask_image.save(f"zoom_enhance_img{image_idx}_1_mask_image.png")
 		if (image_mask_orig):
 			self.log.debug("Original image mask detected")
 			prep_orig = image_mask_orig.resize((mask_image.size[0], mask_image.size[1])).convert("L")
@@ -232,14 +238,16 @@ class Shortcode():
 			width, height = prep_orig.size
 			for y in range(height):
 				for x in range(width):
-					if mask_data[x, y] != (fg_color, fg_color, fg_color, 255): mask_data[x, y] = (0, 0, 0, 0)
+					if mask_data[x, y] != (fg_color, fg_color, fg_color, 255):
+						mask_data[x, y] = (0, 0, 0, 0)
 
 			prep_orig.convert("RGBA")  # just in case
 
 			# Overlay mask
 			mask_image.paste(prep_orig, (0, 0), prep_orig)
 
-		if debug: mask_image.save(f"zoom_enhance_img{image_idx}_2_mask_with_overlay.png")
+		if debug:
+			mask_image.save(f"zoom_enhance_img{image_idx}_2_mask_with_overlay.png")
 		# Make it grayscale
 		mask_image = cv2.cvtColor(numpy.array(mask_image), cv2.COLOR_BGR2GRAY)
 
@@ -265,9 +273,11 @@ class Shortcode():
 				reverse = False
 				i = 0
 				# handle if we need to sort in reverse
-				if mask_sort_method == "right-to-left" or mask_sort_method == "bottom-to-top": reverse = True
+				if mask_sort_method == "right-to-left" or mask_sort_method == "bottom-to-top":
+					reverse = True
 				# handle if we are sorting against the y-coordinate rather than the x-coordinate of the bounding box
-				if mask_sort_method == "top-to-bottom" or mask_sort_method == "bottom-to-top": i = 1
+				if mask_sort_method == "top-to-bottom" or mask_sort_method == "bottom-to-top":
+					i = 1
 				# construct the list of bounding boxes and sort them from top to bottom
 				boundingBoxes = [cv2.boundingRect(c) for c in cnts]
 				(cnts, boundingBoxes) = zip(*sorted(zip(cnts, boundingBoxes), key=lambda b: b[1][i], reverse=reverse))
@@ -307,11 +317,13 @@ class Shortcode():
 				y1 = max(0, y - padding)
 				y2 = min(image.shape[0], y + h + padding)
 				# In case the target appears close to the bottom of the picture, we push the mask up to get the right 1:1 size
-				if (y2 - y1 < size): y1 -= size - (y2 - y1)
+				if (y2 - y1 < size):
+					y1 -= size - (y2 - y1)
 
 				x1 = max(0, x - padding)
 				x2 = min(image.shape[1], x + w + padding)
-				if (x2 - x1 < size): x1 -= size - (x2 - x1)
+				if (x2 - x1 < size):
+					x1 -= size - (x2 - x1)
 
 				self.log.debug(f"Updated contour coordinates: padding={padding}, x1={x1}, x2={x2}, y1={y1}, y2={y2}")
 
@@ -322,7 +334,8 @@ class Shortcode():
 					starting_image_face_big = starting_image_face.resize((upscale_width, upscale_height), resample=upscale_method)
 				sub_mask = Image.fromarray(mask_image[y1:y2, x1:x2])
 				sub_img_big = sub_img.resize((upscale_width, upscale_height), resample=upscale_method)
-				if debug: sub_img_big.save(f"zoom_enhance_img{image_idx}_3_cropped.png")
+				if debug:
+					sub_img_big.save(f"zoom_enhance_img{image_idx}_3_cropped.png")
 
 				# blur radius is relative to canvas size, should be odd integer
 				blur_radius = math.ceil(w * blur_radius_orig) // 2 * 2 + 1
@@ -331,7 +344,8 @@ class Shortcode():
 
 				# Ensure correct size
 				# sub_mask = sub_mask.resize((upscale_width, upscale_height), resample=upscale_method)
-				if debug: sub_mask.save(f"zoom_enhance_img{image_idx}_4_mask_with_blur.png")
+				if debug:
+					sub_mask.save(f"zoom_enhance_img{image_idx}_4_mask_with_blur.png")
 
 				if color_correct_timing == "pre" and color_correct_method != "none" and starting_image:
 					sub_img_big = self.Unprompted.color_match(starting_image_face_big, sub_img_big, color_correct_method, color_correct_strength)
@@ -361,7 +375,8 @@ class Shortcode():
 					self.Unprompted.shortcode_user_vars.clear()
 					self.Unprompted.process_string(file_contents, context)
 					for att in self.Unprompted.shortcode_user_vars:
-						if att.startswith("controlnet_") or att.startswith("cn_"): self.Unprompted.update_controlnet_var(self.Unprompted.main_p, att)
+						if att.startswith("controlnet_") or att.startswith("cn_"):
+							self.Unprompted.update_controlnet_var(self.Unprompted.main_p, att)
 
 					# restore user vars
 					self.Unprompted.shortcode_user_vars = temp_user_vars
@@ -397,7 +412,8 @@ class Shortcode():
 
 					self.Unprompted.main_p.scripts = temp_scripts
 
-					if debug: fixed_image.save(f"zoom_enhance_img{image_idx}_5_enhanced.png")
+					if debug:
+						fixed_image.save(f"zoom_enhance_img{image_idx}_5_enhanced.png")
 				except Exception as e:
 					self.log.exception("Exception while running the img2img task")
 					return ""
@@ -420,14 +436,17 @@ class Shortcode():
 							width, height = current_mask.size
 							for y in range(height):
 								for x in range(width):
-									if mask_data[x, y] != (255, 255, 255, 255): mask_data[x, y] = (0, 0, 0, 0)
+									if mask_data[x, y] != (255, 255, 255, 255):
+										mask_data[x, y] = (0, 0, 0, 0)
 							if blur_radius > 0:
 								current_mask = current_mask.filter(ImageFilter.GaussianBlur(radius=blur_radius))
 							width, height = corrected_main_img.size
 							current_mask = current_mask.resize((width, height))
-							if debug: current_mask.save(f"zoom_enhance_img{image_idx}_6_color_correction_mask.png")
+							if debug:
+								current_mask.save(f"zoom_enhance_img{image_idx}_6_color_correction_mask.png")
 							image_pil.paste(corrected_main_img, (0, 0), current_mask)
-							if debug: image_pil.save(f"zoom_enhance_img{image_idx}_7_after_color_correct.png")
+							if debug:
+								image_pil.save(f"zoom_enhance_img{image_idx}_7_after_color_correct.png")
 					except Exception as e:
 						self.log.exception("Exception while applying color correction")
 
@@ -443,11 +462,15 @@ class Shortcode():
 						padding -= contour_padding
 
 					# Slap our new image back onto the original
-					if test == 1: image_pil = image_pil.paste(fixed_image, (x1 - padding, y1 - padding), sub_mask)
-					elif test == 2: image_pil = image_pil.paste(fixed_image, (x1 - padding, y1 - padding), sub_mask).copy()
-					else: image_pil.paste(fixed_image, (x1 - padding, y1 - padding), sub_mask)
+					if test == 1:
+						image_pil = image_pil.paste(fixed_image, (x1 - padding, y1 - padding), sub_mask)
+					elif test == 2:
+						image_pil = image_pil.paste(fixed_image, (x1 - padding, y1 - padding), sub_mask).copy()
+					else:
+						image_pil.paste(fixed_image, (x1 - padding, y1 - padding), sub_mask)
 
-					if debug: image_pil.save(f"zoom_enhance_img{image_idx}_8_final_result.png")
+					if debug:
+						image_pil.save(f"zoom_enhance_img{image_idx}_8_final_result.png")
 
 					self.log.debug(f"Adding zoom_enhance result for image_idx {image_idx}")
 					if self.Unprompted.routine != "after":
@@ -463,9 +486,11 @@ class Shortcode():
 					return ""
 
 				# Remove temp image key in case [img2img] is used later
-				if "img2img_init_image" in self.Unprompted.shortcode_user_vars: del self.Unprompted.shortcode_user_vars["img2img_init_image"]
+				if "img2img_init_image" in self.Unprompted.shortcode_user_vars:
+					del self.Unprompted.shortcode_user_vars["img2img_init_image"]
 
-			else: self.log.debug(f"Countour area ({area}) is less than the minimum ({min_area}) - skipping")
+			else:
+				self.log.debug(f"Countour area ({area}) is less than the minimum ({min_area}) - skipping")
 
 		if self.Unprompted.routine == "after":
 
@@ -490,38 +515,41 @@ class Shortcode():
 		self.images_queued = []
 
 	def ui(self, gr):
+		o = []
 
 		with gr.Accordion("💬 Prompt Settings", open=True):
-			gr.Text(label="Mask to find 🡢 mask", value="face")
-			gr.Text(label="Replacement 🡢 replacement", value="face")
-			gr.Text(label="Negative mask 🡢 negative_mask", value="")
-			gr.Text(label="Negative replacement 🡢 negative_replacement", value="")
-			gr.Checkbox(label="Inherit your negative prompt for replacement 🡢 inherit_negative")
+			o.append(gr.Text(label="Mask to find 🡢 mask", value="face"))
+			o.append(gr.Text(label="Replacement 🡢 replacement", value="face"))
+			o.append(gr.Text(label="Negative mask 🡢 negative_mask", value=""))
+			o.append(gr.Text(label="Negative replacement 🡢 negative_replacement", value=""))
+			o.append(gr.Checkbox(label="Inherit your negative prompt for replacement 🡢 inherit_negative"))
 		with gr.Accordion("🎭 Mask Settings", open=False):
-			gr.Radio(label="Masking tech method 🡢 mask_method", choices=["clipseg", "clip_surgery", "fastsam"], value="clipseg", interactive=True)  # Passed to txt2mask as "method"
-			gr.Dropdown(label="Mask sorting method 🡢 mask_sort_method", info="When multiple, non-contiguous masks are detected, they will be processed in this order.", value="left-to-right", choices=["left-to-right", "right-to-left", "top-to-bottom", "bottom-to-top", "big-to-small", "small-to-big", "unsorted"])
-			gr.Number(label="Minimum mask size in pixels 🡢 min_area", value=50, interactive=True)
-			gr.Slider(label="Maximum mask size area 🡢 mask_size_max", value=0.5, maximum=1.0, minimum=0.0, interactive=True, step=0.01, info="Example: 0.6 = 60% of the canvas")
-			gr.Slider(label="Blur edges size 🡢 blur_size", value=0.03, maximum=1.0, minimum=0.0, interactive=True, step=0.01)
-			gr.Number(label="Contour padding in pixels 🡢 contour_padding", value=0, interactive=True)
+			o.append(gr.Radio(label="Masking tech method 🡢 mask_method", choices=["clipseg", "clip_surgery", "fastsam"], value="clipseg", interactive=True))  # Passed to txt2mask as "method"
+			o.append(gr.Dropdown(label="Mask sorting method 🡢 mask_sort_method", info="When multiple, non-contiguous masks are detected, they will be processed in this order.", value="left-to-right", choices=["left-to-right", "right-to-left", "top-to-bottom", "bottom-to-top", "big-to-small", "small-to-big", "unsorted"]))
+			o.append(gr.Number(label="Minimum mask size in pixels 🡢 min_area", value=50, interactive=True))
+			o.append(gr.Slider(label="Maximum mask size area 🡢 mask_size_max", value=0.5, maximum=1.0, minimum=0.0, interactive=True, step=0.01, info="Example: 0.6 = 60% of the canvas"))
+			o.append(gr.Slider(label="Blur edges size 🡢 blur_size", value=0.03, maximum=1.0, minimum=0.0, interactive=True, step=0.01))
+			o.append(gr.Number(label="Contour padding in pixels 🡢 contour_padding", value=0, interactive=True))
 		with gr.Accordion("🖥️ Resolution Settings", open=False):
-			gr.Dropdown(label="Upscale method 🡢 upscale_method", value="Nearest Neighbor", choices=list(self.resample_methods.keys()), interactive=True)
-			gr.Dropdown(label="Downscale method 🡢 downscale_method", value="Lanczos", choices=list(self.resample_methods.keys()), interactive=True)
-			gr.Number(label="Sharpen amount 🡢 sharpen_amount", value=1.0, interactive=True)
-			gr.Number(label="Upscale width 🡢 upscale_width", value=-1, interactive=True)
-			gr.Number(label="Upscale height 🡢 upscale_height", value=-1, interactive=True)
-			gr.Number(label="Hires size max 🡢 hires_size_max", info="This is a safety measure to prevent OOM errors.", value=1024, interactive=True)
-			gr.Checkbox(label="Bypass adaptive hires 🡢 bypass_adaptive_hires")
+			o.append(gr.Dropdown(label="Upscale method 🡢 upscale_method", value="Nearest Neighbor", choices=list(self.resample_methods.keys()), interactive=True))
+			o.append(gr.Dropdown(label="Downscale method 🡢 downscale_method", value="Lanczos", choices=list(self.resample_methods.keys()), interactive=True))
+			o.append(gr.Number(label="Sharpen amount 🡢 sharpen_amount", value=1.0, interactive=True))
+			o.append(gr.Number(label="Upscale width 🡢 upscale_width", value=-1, interactive=True))
+			o.append(gr.Number(label="Upscale height 🡢 upscale_height", value=-1, interactive=True))
+			o.append(gr.Number(label="Hires size max 🡢 hires_size_max", info="This is a safety measure to prevent OOM errors.", value=1024, interactive=True))
+			o.append(gr.Checkbox(label="Bypass adaptive hires 🡢 bypass_adaptive_hires"))
 		with gr.Accordion("🎨 Inference Settings", open=False):
-			gr.Slider(label="Minimum CFG scale 🡢 cfg_scale_min", value=7.0, maximum=15.0, minimum=0.0, interactive=True, step=0.5)
-			gr.Slider(label="Maximum denoising strength 🡢 denoising_max", value=0.65, maximum=1.0, minimum=0.0, interactive=True, step=0.01)
-			gr.Text(label="Force CFG scale to this value 🡢 cfg_scale")
-			gr.Text(label="Force denoising strength to this value 🡢 denoising_strength")
-			gr.Dropdown(label="Color correct method 🡢 color_correct_method", choices=["hm", "mvgd", "mkl", "hm-mvgd-hm", "hm-mkl-hms"], value="none", interactive=True)
-			gr.Radio(label="Color correct timing 🡢 color_correct_timing", choices=["pre", "post"], value="pre", interactive=True)
-			gr.Slider(label="Color correct strength 🡢 color_correct_strength", value=1.0, maximum=5.0, minimum=1.0, interactive=True, step=1.0, info="Experimental, probably best to leave it at 1")
+			o.append(gr.Slider(label="Minimum CFG scale 🡢 cfg_scale_min", value=7.0, maximum=15.0, minimum=0.0, interactive=True, step=0.5))
+			o.append(gr.Slider(label="Maximum denoising strength 🡢 denoising_max", value=0.65, maximum=1.0, minimum=0.0, interactive=True, step=0.01))
+			o.append(gr.Text(label="Force CFG scale to this value 🡢 cfg_scale"))
+			o.append(gr.Text(label="Force denoising strength to this value 🡢 denoising_strength"))
+			o.append(gr.Dropdown(label="Color correct method 🡢 color_correct_method", choices=["hm", "mvgd", "mkl", "hm-mvgd-hm", "hm-mkl-hms"], value="none", interactive=True))
+			o.append(gr.Radio(label="Color correct timing 🡢 color_correct_timing", choices=["pre", "post"], value="pre", interactive=True))
+			o.append(gr.Slider(label="Color correct strength 🡢 color_correct_strength", value=1.0, maximum=5.0, minimum=1.0, interactive=True, step=1.0, info="Experimental, probably best to leave it at 1"))
 
-		gr.Checkbox(label="Include original, unenhanced image in output window? 🡢 show_original")
-		gr.Checkbox(label="Save debug images to WebUI folder 🡢 debug")
-		gr.Checkbox(label="Unload txt2mask model after inference (for low memory devices) 🡢 unload_model")
-		gr.Checkbox(label="Shortcode not working? Try alternate processing 🡢 _alt")
+		o.append(gr.Checkbox(label="Include original, unenhanced image in output window? 🡢 show_original"))
+		o.append(gr.Checkbox(label="Save debug images to WebUI folder 🡢 debug"))
+		o.append(gr.Checkbox(label="Unload txt2mask model after inference (for low memory devices) 🡢 unload_model"))
+		o.append(gr.Checkbox(label="Shortcode not working? Try alternate processing 🡢 _alt"))
+
+		return o

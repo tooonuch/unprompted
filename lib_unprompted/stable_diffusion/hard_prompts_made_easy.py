@@ -3,6 +3,7 @@ import copy
 import open_clip
 import torch
 from modules import shared
+import torch.nn.functional as F
 
 
 class State:
@@ -67,16 +68,26 @@ def decode_ids(input_ids, tokenizer, by_token=False):
 
 
 def get_target_feature(model, preprocess, tokenizer_funct, device, target_images=None, target_prompts=None):
+	all_target_features = []
+
 	if target_images is not None:
 		with torch.no_grad():
 			curr_images = [preprocess(i).unsqueeze(0) for i in target_images]
 			curr_images = torch.concatenate(curr_images).to(device)
-			all_target_features = model.encode_image(curr_images)
-	else:
+			all_target_features.append(model.encode_image(curr_images))
+	if target_prompts is not None:
 		texts = tokenizer_funct(target_prompts).to(device)
-		all_target_features = model.encode_text(texts)
+		text_features = model.encode_text(texts)
 
-	return all_target_features
+		all_target_features.append(text_features)
+
+	# Combine encoded features
+	if len(all_target_features) > 1:
+		target_features = torch.cat(all_target_features, dim=0)
+	else:
+		target_features = all_target_features[0]
+
+	return target_features
 
 
 def initialize_prompt(tokenizer, token_embedding, args, device):

@@ -8,9 +8,9 @@ class Shortcode():
 		from PIL import Image
 		return_string = ""
 		delimiter = ","
-		image = self.Unprompted.parse_alt_tags(kwargs["file"],context) if "file" in kwargs else self.Unprompted.current_image()
+		image = self.Unprompted.parse_alt_tags(kwargs["file"], context) if "file" in kwargs else self.Unprompted.current_image()
 
-		if isinstance(image,str):
+		if isinstance(image, str):
 			try:
 				image = Image.open(image)
 			except:
@@ -32,27 +32,30 @@ class Shortcode():
 			import sys
 			return_string += str(sys.getsizeof(image.tobytes())) + delimiter
 		if "iqa" in kwargs:
-			import pyiqa, torch
-			
-			metrics = self.Unprompted.parse_alt_tags(kwargs["iqa"],context).split(self.Unprompted.Config.syntax.delimiter)
-			for metric_name in metrics:
-				if metric_name not in self.iqa_metrics:
-					self.log.info(f"Creating IQA metric `{metric_name}`...")
-					self.iqa_metrics[metric_name] = pyiqa.create_metric(metric_name, device=torch.device("cuda") if torch.cuda.is_available() else "cpu", as_loss=False)
-				else:
-					self.log.info(f"Using cached IQA metric `{metric_name}`")
+			if self.Unprompted.shortcode_install_requirements(f"image quality assessment", ["pyiqa"]):
+				import pyiqa, torch
 
-				score = self.iqa_metrics[metric_name](image).cpu().item()
-				
-				return_string += str(score) + delimiter
+				metrics = self.Unprompted.parse_alt_tags(kwargs["iqa"], context).split(self.Unprompted.Config.syntax.delimiter)
+				for metric_name in metrics:
+					if metric_name not in self.iqa_metrics:
+						self.log.info(f"Creating IQA metric `{metric_name}`...")
+						self.iqa_metrics[metric_name] = pyiqa.create_metric(metric_name, device=torch.device("cuda") if torch.cuda.is_available() else "cpu", as_loss=False)
+					else:
+						self.log.info(f"Using cached IQA metric `{metric_name}`")
+
+					score = self.iqa_metrics[metric_name](image).cpu().item()
+
+					return_string += str(score) + delimiter
 		if "pixel_count" in pargs:
 			return_string += str(image.width * image.height) + delimiter
 
 		if "unload_metrics" in pargs:
 			self.iqa_metrics = {}
-		
+
 		return (return_string[:-len(delimiter)])
 
 	def ui(self, gr):
-		gr.Textbox(label="Path to image (uses SD image by default) 🡢 str")
-		gr.Textbox(label="Image Quality Assessment metric(s) 🡢 iqa")
+		return [
+		    gr.Textbox(label="Path to image (uses SD image by default) 🡢 arg_str"),
+		    gr.Textbox(label="Image Quality Assessment metric(s) 🡢 iqa"),
+		]

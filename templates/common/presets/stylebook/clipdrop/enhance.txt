@@ -1,0 +1,2 @@
+[set stylebook_subject]breathtaking [get stylebook_subject] . award-winning, professional, highly detailed
+[set stylebook_negative]ugly, deformed, noisy, blurry, distorted, grainy[/set]

@@ -1,0 +1,11 @@
+- Check if it would be feasible to merge the Wizard and main shortcode parsers.
+- The "Generate Shortcode" button should account for the destination type, e.g. `after` should encapsulate the output in `[after]`.
+- Review all shortcode syntax and standardize the use of leading underscore for args.
+- Rework `wizard.js` to utilize jQuery, preferably before it grows much larger.
+- Implement a basic version of Unprompted as a Comfy UI node.
+- Rewrite the `wizard_generate_shortcode()` and `wizard_generate_template()` methods to utilize Gradio event listener inputs, rather than accessing object values directly
+- Split up the massive `unprompted.py` script into smaller modules.
+- `[filelist]`: Rework shortcode to utilize the `Unprompted.parse_filepath()` method
+- Introduce "meta" block for templates and workflow to house information such as author or homepage URL
+- Ensure use of `Unprompted.parse_arg()` wherever possible, as opposed to `parse_alt_tags()` or `parse_advanced()`
+- Investigate possible memory leak when using the "Reload UI" button in WebUI settings; I am not certain yet if the culprit is Unprompted, WebUI, or Gradio

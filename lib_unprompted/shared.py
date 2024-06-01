@@ -4,12 +4,12 @@ import lib_unprompted.shortcodes as shortcodes
 from lib_unprompted.simpleeval import simple_eval
 import os
 import glob
-import importlib
-import inspect
 import sys
 import time
 import logging
 from lib_unprompted import helpers
+
+VERSION = "11.0.0"
 
 
 def parse_config(base_dir="."):
@@ -38,6 +38,8 @@ class Unprompted:
 		self.shortcode_user_vars = {}
 		self.cleanup_routines = []
 		self.after_routines = []
+		self.goodbye_routines = []
+		self.requirements_checked = []  # Store requirements that have bene processed with shortcode_install_requirements()
 
 		# Load shortcodes
 		import importlib.util
@@ -93,10 +95,11 @@ class Unprompted:
 						return (self.shortcode_objects[f"{keyword}"].run_block(pargs, kwargs, context, content))
 
 			# Setup extra routines
-			if (hasattr(self.shortcode_objects[shortcode_name], "cleanup")):
-				self.cleanup_routines.append(shortcode_name)
-			if (hasattr(self.shortcode_objects[shortcode_name], "after")):
-				self.after_routines.append(shortcode_name)
+			attributes = ["cleanup", "after", "goodbye"]
+			routines = [self.cleanup_routines, self.after_routines, self.goodbye_routines]
+			for attr, routine in zip(attributes, routines):
+				if hasattr(self.shortcode_objects[shortcode_name], attr):
+					routine.append(shortcode_name)
 
 			# Create descendent logger
 			self.shortcode_objects[shortcode_name].log = self.log.getChild(shortcode_name)
@@ -107,7 +110,7 @@ class Unprompted:
 		self.log.info(f"Finished loading in {time.time()-start_time} seconds.")
 
 	def __init__(self, base_dir="."):
-		self.VERSION = "10.12.0"
+		self.VERSION = VERSION
 
 		self.shortcode_modules = {}
 		self.shortcode_objects = {}
@@ -130,8 +133,10 @@ class Unprompted:
 				def format(self, record):
 					def set_col_width(width=8, col_string="", new_string="", increment=None):
 						if self.Config.logging.improve_alignment:
-							if not new_string: new_string = col_string
-							if not increment: increment = width
+							if not new_string:
+								new_string = col_string
+							if not increment:
+								increment = width
 							while (len(col_string) > width):
 								width += increment
 							num_spaces = width - len(col_string)
@@ -176,14 +181,25 @@ class Unprompted:
 		self.load_shortcodes()
 
 	def start(self, string, debug=True):
-		if debug: self.log.debug("Loading global variables...")
+		if debug:
+			self.log.debug("Loading global variables...")
 		for global_var, value in self.Config.globals.__dict__.items():
 			self.shortcode_user_vars[self.Config.syntax.global_prefix + global_var] = value
-		if debug: self.log.debug("Main routine started...")
+		if debug:
+			self.log.debug("Main routine started...")
 		self.routine = "main"
 		self.conditional_depth = -1
 		result = self.process_string(string)
-		if debug: self.log.debug("Main routine completed.")
+
+		# Final sanitization routine
+		sanitization_items = self.Config.syntax.sanitize_last.__dict__.items()
+		for k, v in sanitization_items:
+			result = helpers.strip_str(result, k)
+		for k, v in sanitization_items:
+			result = result.replace(k, v)
+
+		if debug:
+			self.log.debug("Main routine completed.")
 		return result
 
 	def cleanup(self):
@@ -199,15 +215,25 @@ class Unprompted:
 		self.routine = "after"
 		for i in self.after_routines:
 			val = self.shortcode_objects[i].after(p, processed)
-			if val: processed = val
+			if val:
+				processed = val
 		self.log.debug("After routine completed.")
 		return processed
 
+	def goodbye(self):
+		self.log.debug("Goodbye routine started...")
+		self.routine = "goodbye"
+		for i in self.goodbye_routines:
+			self.shortcode_objects[i].goodbye()
+		self.log.debug("Goodbye routine completed.")
+
 	def process_string(self, string, context=None, cleanup_extra_spaces=None):
-		if cleanup_extra_spaces == None: cleanup_extra_spaces = self.Config.syntax.cleanup_extra_spaces
+		if cleanup_extra_spaces == None:
+			cleanup_extra_spaces = self.Config.syntax.cleanup_extra_spaces
 
 		self.conditional_depth += 1
-		if context: self.current_context = context
+		if context:
+			self.current_context = context
 		# First, sanitize contents
 		string = self.shortcode_parser.parse(self.sanitize_pre(string, self.Config.syntax.sanitize_before), context)
 		self.conditional_depth = max(0, self.conditional_depth - 1)
@@ -215,51 +241,68 @@ class Unprompted:
 
 	def sanitize_pre(self, string, rules_obj, only_remove_last=False):
 		for k, v in rules_obj.__dict__.items():
-			if only_remove_last: v.join(string.rsplit(k, 1))
-			else: string = string.replace(k, v)
+			if only_remove_last:
+				v.join(string.rsplit(k, 1))
+			else:
+				string = string.replace(k, v)
 		return (string)
 
 	def sanitize_post(self, string, cleanup_extra_spaces=True):
-		# Final sanitization routine
+		# After sanitization routine
 		sanitization_items = self.Config.syntax.sanitize_after.__dict__.items()
 		for k, v in sanitization_items:
 			string = helpers.strip_str(string, k)
 		for k, v in sanitization_items:
 			string = string.replace(k, v)
-		if cleanup_extra_spaces: string = " ".join(string.split())  # Cleanup extra spaces
+
+		if cleanup_extra_spaces:
+			string = " ".join(string.split())  # Cleanup extra spaces
+
 		return (string)
 
-	def parse_filepath(self, string_orig, context="", root=None, must_exist=True):
+	def parse_filepath(self, string_orig, context="", root=None, must_exist=True, return_all=False):
 		import random
 
 		# Replace placeholders
-		string = self.str_replace_macros(string_orig)
+		strings = self.str_replace_macros(string_orig).split(self.Config.syntax.delimiter)
 
-		# Relative path
-		if (string[0] == "."):
-			string = os.path.dirname(context) + "/" + string
-			self.log.debug(f"Transformed relative path from \"{string_orig}\" to \"{string}\"")
-		# Absolute path
-		elif (os.path.isabs(string)):
-			self.log.debug(f"Transformed absolute path from \"{string_orig}\" to \"{string}\"")
-		# Internal (Unprompted) path
-		else:
-			if root is None: root = self.base_dir + "/" + self.Config.template_directory
-			string = root + "/" + string
-			self.log.debug(f"Transformed internal path from \"{string_orig}\" to \"{string}\"")
+		return_string = ""
 
-		files = glob.glob(string)
-		filecount = len(files)
-		if (filecount == 0):
-			if must_exist:
-				self.log.error(f"No files found at this location: {string}")
-				return ("")
+		for string in strings:
+			if return_string:
+				return_string += self.Config.syntax.delimiter
+
+			# Relative path
+			if (string[0] == "."):
+				string = os.path.dirname(context) + "/" + string
+				self.log.debug(f"Transformed relative path from \"{string_orig}\" to \"{string}\"")
+			# Absolute path
+			elif (os.path.isabs(string)):
+				self.log.debug(f"Transformed absolute path from \"{string_orig}\" to \"{string}\"")
+			# Internal (Unprompted) path
 			else:
-				return (string)
-		elif filecount > 1:
-			string = random.choice(files)
+				if root is None:
+					root = self.base_dir + "/" + self.Config.template_directory
+				string = root + "/" + string
+				self.log.debug(f"Transformed internal path from \"{string_orig}\" to \"{string}\"")
 
-		return (string)
+			files = glob.glob(string)
+			filecount = len(files)
+			if (filecount == 0):
+				if must_exist:
+					self.log.error(f"No files found at this location: {string}")
+					return ("")
+				else:
+					return (string)
+			elif filecount > 1:
+				if return_all:
+					return_string += self.Config.syntax.delimiter.join(files)
+				else:
+					return_string += random.choice(files)
+			else:
+				return_string += string
+
+		return (return_string)
 
 	def prep_for_shortcode(self, keyword, pargs, kwargs, context, content=""):
 		"""Stores information about a shortcode into the Unprompted object for ease of access."""
@@ -273,10 +316,16 @@ class Unprompted:
 		"""Processes the argument, casting it to the correct datatype."""
 		# Load defaults from the Unprompted object
 		# Note: You can manually set these to False
-		if context == None: context = self.context
-		if pargs == None: pargs = self.pargs
-		if kwargs == None: kwargs = self.kwargs
-		if delimiter == None: delimiter = self.Config.syntax.delimiter
+		if context == None:
+			context = self.context
+		if pargs == None:
+			pargs = self.pargs
+		if kwargs == None:
+			kwargs = self.kwargs
+		if delimiter == None:
+			delimiter = self.Config.syntax.delimiter
+		keyword = self.keyword
+		content = self.content
 
 		# If a datatype is not specified, we refer to the type of the default value
 		if datatype == None:
@@ -285,8 +334,10 @@ class Unprompted:
 		if pargs and key in pargs:
 			return True
 		elif kwargs and key in kwargs:
-			if arithmetic: default = self.parse_advanced(str(kwargs[key]), context)
-			else: default = self.parse_alt_tags(str(kwargs[key]), context)
+			if arithmetic:
+				default = self.parse_advanced(str(kwargs[key]), context)
+			else:
+				default = self.parse_alt_tags(str(kwargs[key]), context)
 			if delimiter:
 				try:
 					# We will cast the value to a string so that we can split it, but
@@ -309,13 +360,18 @@ class Unprompted:
 			self.log.warning(f"Could not cast {default} to {datatype}.")
 			pass
 
+		# Reset the value of Unprompted's easy-access variables
+		self.prep_for_shortcode(keyword, pargs, kwargs, context, content)
+
 		return default
 
 	def parse_advanced(self, string, context=None):
 		"""First runs the string through parse_alt_tags, the result of which then goes through simpleeval"""
-		if string is None: return ""
+		if string is None:
+			return ""
 
-		if (len(string) < 1): return ""
+		if (len(string) < 1):
+			return ""
 		string = self.parse_alt_tags(string, context)
 		if self.Config.advanced_expressions:
 			try:
@@ -325,10 +381,26 @@ class Unprompted:
 		else:
 			return (string)
 
+	def parse_image_kwarg(self, kwarg):
+		self.log.debug(f"Processing image kwarg: {kwarg}")
+
+		if kwarg in self.kwargs:
+			image_string = self.parse_arg(kwarg, "")
+			self.log.debug(f"Found image string {kwarg} in kwargs {self.kwargs}: {image_string}")
+			image = helpers.str_to_pil(image_string)
+		else:
+			self.log.debug(f"Could not find image string {kwarg} in kwargs {self.kwargs}. Using current image...")
+			image = self.current_image()
+
+		self.log.debug(f"Image kwarg {kwarg} processed as: {image}")
+		return image
+
 	def parse_alt_tags(self, string, context=None, parser=None):
 		"""Converts any alt tags and then parses the resulting shortcodes"""
-		if string is None or len(string) < 1: return ""
-		if parser is None: parser = self.shortcode_parser
+		if string is None or len(string) < 1:
+			return ""
+		if parser is None:
+			parser = self.shortcode_parser
 		# Find maximum nested depth
 		nested = 0
 		while True:
@@ -363,7 +435,8 @@ class Unprompted:
 
 	def make_alt_tags(self, string):
 		"""Similar to parse_alt_tags, but in reverse; converts square brackets to nested alt tags."""
-		if string is None or len(string) < 1: return ""
+		if string is None or len(string) < 1:
+			return ""
 
 		# Find maximum nested depth
 		nested = 0
@@ -394,24 +467,41 @@ class Unprompted:
 		return (string)
 
 	def is_system_arg(self, string):
-		if (string[0] == "_"): return (True)
+		if (string[0] == "_"):
+			return (True)
 		return (False)
 
-	def color_match(self, img_ref, img_src, method="hm-mkl-hm", iterations=1):
+	def color_match(self, img_ref, img_src, method="hm-mkl-hm", opacity=1.0, iterations=1):
 		from color_matcher import ColorMatcher
 		from color_matcher.normalizer import Normalizer
 		from PIL import Image
 		import numpy
 		cm = ColorMatcher()
+		img_src_orig = img_src.copy()
 		img_ref = Normalizer(numpy.array(img_ref)).uint8_norm()
-		img_src = Normalizer(numpy.array(img_src)).uint8_norm()
+		img_new = Normalizer(numpy.array(img_src)).uint8_norm()
 		for i in range(iterations):
-			img_src = cm.transfer(src=img_src, ref=img_ref, method=method)
-		return (Image.fromarray(Normalizer(img_src).uint8_norm()))
+			img_new = cm.transfer(src=img_new, ref=img_ref, method=method)
+		# Convert to PIL
+		img_new = Image.fromarray(Normalizer(img_new).uint8_norm())
+
+		# Convert img_src_orig to PIL Image if it is not already
+		if not isinstance(img_src_orig, Image.Image):
+			img_src_orig = Image.fromarray(np.array(img_src_orig))
+
+		# Blend img_new with img_src
+		if opacity < 1.0:
+			# Ensure the images are the same size
+			if img_src_orig.size != img_new.size:
+				img_src_orig = img_src_orig.resize(img_new.size)
+			img_new = Image.blend(img_src_orig, img_new, opacity)
+		return img_new
 
 	def shortcode_var_is_true(self, key, pargs, kwargs, context=None):
-		if key in pargs: return True
-		if key in kwargs and self.parse_advanced(kwargs[key], context): return True
+		if key in pargs:
+			return True
+		if key in kwargs and self.parse_advanced(kwargs[key], context):
+			return True
 		return False
 
 	def load_jsons(self, paths, context=None):
@@ -453,8 +543,10 @@ class Unprompted:
 					this_val = self.shortcode_user_vars[att]
 					# Apply preset model names
 					if att_split[2] == "model":
-						if self.shortcode_user_vars["sd_base"] == "sd1": cn_dict = self.Config.stable_diffusion.controlnet.sd1_models
-						elif self.shortcode_user_vars["sd_base"] == "sdxl": cn_dict = self.Config.stable_diffusion.controlnet.sdxl_models
+						if self.shortcode_user_vars["sd_base"] == "sd1":
+							cn_dict = self.Config.stable_diffusion.controlnet.sd1_models
+						elif self.shortcode_user_vars["sd_base"] == "sdxl":
+							cn_dict = self.Config.stable_diffusion.controlnet.sdxl_models
 
 						if hasattr(cn_dict, this_val):
 							this_val = getattr(cn_dict, this_val)
@@ -464,7 +556,8 @@ class Unprompted:
 			self.log.error(f"Could not set ControlNet value ({att}): {e}")
 
 	def update_user_vars(self, this_p, user_vars=None):
-		if not user_vars: user_vars = self.shortcode_user_vars
+		if not user_vars:
+			user_vars = self.shortcode_user_vars
 		# Set up system var support - copy relevant p attributes into shortcode var object
 		for att in dir(this_p):
 			if not att.startswith("__") and att not in ["sd_model", "batch_count_index", "batch_size_index", "extra_network_data"]:
@@ -487,15 +580,7 @@ class Unprompted:
 				info = sd_models.get_closet_checkpoint_match(self.shortcode_user_vars["sd_model"])
 				if info:
 					new_model = sd_models.load_model(info, None)  #, None
-					self.shortcode_user_vars["sd_base"] = "none"
-					if new_model:
-						# Update `sd_base` special variable
-						try:  # temporary workaround for sd.next lacking these variables
-							if new_model.is_sdxl: self.shortcode_user_vars["sd_base"] = "sdxl"
-							elif new_model.is_sd2: self.shortcode_user_vars["sd_base"] = "sd2"
-							elif new_model.is_sd1: self.shortcode_user_vars["sd_base"] = "sd1"
-						except:
-							pass
+					self.update_stable_diffusion_architecture_vars(new_model)
 			elif att == "sd_vae":
 				from modules import sd_vae
 				info = sd_vae.find_vae_near_checkpoint(self.shortcode_user_vars[att])
@@ -504,6 +589,23 @@ class Unprompted:
 			# control controlnet
 			elif att.startswith("controlnet_") or att.startswith("cn_"):
 				self.update_controlnet_var(this_p, att)
+
+	def update_stable_diffusion_architecture_vars(self, model):
+		try:
+			if model.is_sdxl:
+				architecture = "sdxl"
+			elif model.is_sd2:
+				architecture = "sd2"
+			elif model.is_sd1:
+				architecture = "sd1"
+			else:
+				architecture = "none"
+
+			self.shortcode_user_vars["sd_base"] = architecture
+			self.shortcode_user_vars["sd_res"] = getattr(self.Config.stable_diffusion.resolutions, architecture)
+		except:
+			self.log.exception("Could not update Stable Diffusion architecture variables.")
+			pass
 
 	def batch_test_bypass(self, batch_idx):
 		"""This is used by shortcodes that implement batch processing to determine if we should skip a certain image per the expression stored in the batch_test user var."""
@@ -529,13 +631,15 @@ class Unprompted:
 		deprecated_vars["batch_index"] = "batch_count_index"
 
 		if var_name in deprecated_vars:
-			if self.Unprompted.Config.logging.deprecated_warnings: self.log.warning(f"The variable {var_name} is deprecated! You may want to use {deprecated_vars[var_name]} instead.")
+			if self.Unprompted.Config.logging.deprecated_warnings:
+				self.log.warning(f"The variable {var_name} is deprecated! You may want to use {deprecated_vars[var_name]} instead.")
 			return True
 
 		return False
 
 	def prevent_else(self, else_id=None):
-		if not else_id: else_id = self.conditional_depth
+		if not else_id:
+			else_id = self.conditional_depth
 		self.shortcode_objects["else"].do_else[str(else_id)] = False
 
 	def str_replace_macros(self, string):
@@ -581,8 +685,65 @@ class Unprompted:
 		return None
 
 	def escape_tags(self, string, new_start=None, new_end=None):
-		if not new_start: new_start = self.Config.syntax.tag_escape + self.Config.syntax.tag_start_alt
-		if not new_end: new_end = self.Config.syntax.tag_escape + self.Config.syntax.tag_end_alt
+		if not new_start:
+			new_start = self.Config.syntax.tag_escape + self.Config.syntax.tag_start_alt
+		if not new_end:
+			new_end = self.Config.syntax.tag_escape + self.Config.syntax.tag_end_alt
 		# self.log.warning(f"string is {string}")
 		# self.log.warning(f"string after replacing is {string.replace(self.Config.syntax.tag_start,new_start).replace(self.Config.syntax.tag_end,new_end)}")
 		return string.replace(self.Config.syntax.tag_start, new_start).replace(self.Config.syntax.tag_end, new_end)
+
+	def shortcode_install_requirements(self, purpose, requirements):
+		if self.Config.skip_requirements:
+			self.log.debug("Skipping requirements installation per `Config.skip_requirements`.")
+			return True
+
+		import inspect, pkg_resources
+
+		# Get name of file that called this method
+		shortcode = inspect.stack()[1].filename
+		if not shortcode:
+			shortcode = "unknown"
+		else:
+			shortcode = os.path.splitext(os.path.basename(shortcode))[0]
+
+		if f"{shortcode}_{purpose}" in self.requirements_checked:
+			self.log.debug(f"Requirements for {shortcode}_{purpose} have already been checked.")
+			return True
+		else:
+			self.requirements_checked.append(f"{shortcode}_{purpose}")
+
+		try:
+			import modules.launch_utils as launch
+
+		except:
+			self.log.error("Could not import launch_utils. Please ensure you are running Unprompted from the WebUI.")
+			return False
+
+		for package in requirements:
+			if "#" in package:
+				package_with_comment = package.split("#", 1)
+				package = package_with_comment[0].strip()
+				reason = f"{purpose} {package_with_comment[1].strip()}"
+			else:
+				reason = purpose
+
+			try:
+				req_string = f"requirements for Unprompted {self.Config.syntax.tag_start}{shortcode}{self.Config.syntax.tag_end} ({reason})"
+
+				if "==" in package:
+					package_name, package_version = package.split("==")
+					try:
+						installed_version = pkg_resources.get_distribution(package_name).version
+						if installed_version != package_version:
+							launch.run_pip(f"install {package}", f"{req_string}: updating {package_name} version from {installed_version} to {package_version}")
+					except pkg_resources.DistributionNotFound:
+						# Package is not installed, install it
+						launch.run_pip(f"install {package}", f"{req_string}: installing {package_name}")
+				elif not launch.is_installed(package):
+					launch.run_pip(f"install {package}", f"{req_string}")
+			except:
+				self.log.exception(f"Failed to install {package} {req_string}")
+				return False
+
+		return True

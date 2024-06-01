@@ -13,7 +13,8 @@ class Shortcode():
 
 		# Default case
 		if len(pargs) == 0:
-			if _var != "": return (self.Unprompted.parse_alt_tags(content, context))
+			if _var != "":
+				return (self.Unprompted.parse_alt_tags(content, context))
 		# Supports matching against multiple pargs
 		for parg in pargs:
 			if helpers.is_equal(_var, self.Unprompted.parse_advanced(parg, context)):
@@ -23,4 +24,6 @@ class Shortcode():
 		return ("")
 
 	def ui(self, gr):
-		gr.Textbox(label="Matching value 🡢 str", max_lines=1)
+		return [
+		    gr.Textbox(label="Matching value 🡢 arg_str", max_lines=1),
+		]

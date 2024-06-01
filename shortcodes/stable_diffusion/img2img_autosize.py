@@ -6,7 +6,7 @@ class Shortcode():
 	def run_atomic(self, pargs, kwargs, context):
 		if "init_images" in self.Unprompted.shortcode_user_vars:
 			sd_unit = self.Unprompted.parse_advanced(kwargs["unit"], context) if "unit" in kwargs else 64
-			target_size = self.Unprompted.parse_advanced(kwargs["target"], context) if "target" in kwargs else 512
+			target_size = self.Unprompted.parse_arg("target", self.Unprompted.shortcode_user_vars["sd_res"])
 			only_full_res = self.Unprompted.parse_advanced(kwargs["only_full_res"], context) if "only_full_res" in kwargs else False
 
 			if not only_full_res or "inpaint_full_res" not in self.Unprompted.shortcode_user_vars or not self.Unprompted.shortcode_user_vars["inpaint_full_res"]:
@@ -35,6 +35,8 @@ class Shortcode():
 		return ("")
 
 	def ui(self, gr):
-		gr.Number(label="Minimum pixels of at least one dimension 🡢 target", value=512, interactive=True)
-		gr.Number(label="Rounding multiplier of output resolution (must be divisible by 8) 🡢 unit", value=64, interactive=True)
-		gr.Checkbox(label="Only run this shortcode if using full resolution inpainting mode 🡢 only_full_res")
+		return [
+		    gr.Number(label="Minimum pixels of at least one dimension 🡢 target", value=1024, interactive=True),
+		    gr.Number(label="Rounding multiplier of output resolution (must be divisible by 8) 🡢 unit", value=64, interactive=True),
+		    gr.Checkbox(label="Only run this shortcode if using full resolution inpainting mode 🡢 only_full_res"),
+		]

@@ -1,0 +1,2 @@
+[set stylebook_subject][get stylebook_subject], popsurrealism art, masterpiece, illustration, watercolor, ink, vibrant colors[/set]
+[set stylebook_negative]photograph, amateur[/set]

@@ -45,9 +45,13 @@ with open(requirements) as file:
 
 			if "==" in package:
 				package_name, package_version = package.split("==")
-				installed_version = pkg_resources.get_distribution(package_name).version
-				if installed_version != package_version:
-					launch.run_pip(f"install {package}", f"requirements for Unprompted - {reason}: updating {package_name} version from {installed_version} to {package_version}")
+				try:
+					installed_version = pkg_resources.get_distribution(package_name).version
+					if installed_version != package_version:
+						launch.run_pip(f"install {package}", f"requirements for Unprompted - {reason}: updating {package_name} version from {installed_version} to {package_version}")
+				except pkg_resources.DistributionNotFound:
+					# Package is not installed, install it
+					launch.run_pip(f"install {package}", f"requirements for Unprompted - {reason}: installing {package_name}")
 			elif not launch.is_installed(package):
 				launch.run_pip(f"install {package}", f"requirements for Unprompted - {reason}: {package}")
 			elif debug:

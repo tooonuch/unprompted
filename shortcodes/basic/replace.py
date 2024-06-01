@@ -3,9 +3,15 @@ class Shortcode():
 		self.Unprompted = Unprompted
 		self.description = "Updates a string using the arguments for replacement logic."
 
+	def preprocess_block(self, pargs, kwargs, context):
+		if "_now" in pargs:
+			return True
+		return False
+
 	def run_block(self, pargs, kwargs, context, content):
 
 		_insensitive = self.Unprompted.shortcode_var_is_true("_insensitive", pargs, kwargs)
+		_strict = self.Unprompted.parse_arg("_strict", False)
 
 		if "_load" in kwargs:
 			jsons = self.Unprompted.load_jsons(self.Unprompted.parse_advanced(kwargs["_load"], context), context)
@@ -21,7 +27,10 @@ class Shortcode():
 
 			elif (key[0] != "_"):
 				from_values.append(self.Unprompted.parse_advanced(key, context))
-				to_values.append(self.Unprompted.parse_advanced(value, context))
+				if _strict:
+					to_values.append(value)
+				else:
+					to_values.append(self.Unprompted.parse_advanced(value, context))
 			else:
 				continue
 
@@ -35,14 +44,25 @@ class Shortcode():
 				compiled = re.compile(re.escape(from_value), re.IGNORECASE)
 				content = compiled.sub(to_value, content, count=_count)
 			else:
-				if ("_count" in kwargs): content = content.replace(from_value, to_value, self.Unprompted.parse_advanced(kwargs["_count"]))
-				else: content = content.replace(from_value, to_value)
+				if _strict and from_value in content:
+					to_value = self.Unprompted.parse_advanced(to_value, context)
 
-		return (content)
+				if ("_count" in kwargs):
+					content = content.replace(from_value, to_value, self.Unprompted.parse_advanced(kwargs["_count"]))
+				else:
+					content = content.replace(from_value, to_value)
+
+		if "_now" in pargs:
+			return self.Unprompted.process_string(content, context)
+		return content
 
 	def ui(self, gr):
-		gr.Textbox(label="Arbitrary replacement arguments in old=new format 🡢 verbatim", max_lines=1, placeholder='hello="goodbye" red="blue"')
-		gr.Textbox(label="Original value, with advanced expression support 🡢 _from", max_lines=1)
-		gr.Textbox(label="New value, with advanced expression support 🡢 _to", max_lines=1)
-		gr.Textbox(label="Path to one or more JSON files containing from:to replacement data 🡢 ldata", max_lines=1)
-		gr.Number(label="Maximum number of times the replacement may occur 🡢 _count", max_lines=1, value=-1)
+		return [
+		    gr.Textbox(label="Arbitrary replacement arguments in old=new format 🡢 arg_verbatim", max_lines=1, placeholder='hello="goodbye" red="blue"'),
+		    gr.Textbox(label="Original value, with advanced expression support 🡢 _from", max_lines=1),
+		    gr.Textbox(label="New value, with advanced expression support 🡢 _to", max_lines=1),
+		    gr.Textbox(label="Path to one or more JSON files containing from:to replacement data 🡢 _load", max_lines=1),
+		    gr.Number(label="Maximum number of times the replacement may occur 🡢 _count", max_lines=1, value=-1),
+		    gr.Checkbox(label="Perform case-insensitive replacements 🡢 _insensitive", value=False),
+		    gr.Checkbox(label="Only evaluate expressions on matches 🡢 _strict", value=False),
+		]

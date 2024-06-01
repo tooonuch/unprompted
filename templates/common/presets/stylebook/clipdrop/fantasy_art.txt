@@ -1,0 +1,2 @@
+[set stylebook_subject]ethereal fantasy concept art of [get stylebook_subject] . magnificent, celestial, ethereal, painterly, epic, majestic, magical, fantasy art, cover art, dreamy[/set]
+[set stylebook_negative]photographic, realistic, realism, 35mm film, dslr, cropped, frame, text, deformed, glitch, noise, noisy, off-center, deformed, cross-eyed, closed eyes, bad anatomy, ugly, disfigured, sloppy, duplicate, mutated, black and white[/set]

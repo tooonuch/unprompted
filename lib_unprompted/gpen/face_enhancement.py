@@ -13,7 +13,7 @@ from lib_unprompted.gpen.align_faces import warp_and_crop_face, get_reference_fa
 
 
 class FaceEnhancement(object):
-	def __init__(self, args, base_dir='./', in_size=512, out_size=None, model=None, use_sr=True, device='cuda',interp=3):
+	def __init__(self, args, base_dir='./', in_size=512, out_size=None, model=None, use_sr=True, device='cuda', interp=3, log=None):
 		self.facedetector = RetinaFaceDetection(base_dir, device)
 		self.facegan = FaceGAN(base_dir, in_size, out_size, model, args.channel_multiplier, args.narrow, args.key, device=device)
 		self.srmodel = RealESRNet(base_dir, args.sr_model, args.sr_scale, args.tile_size, device=device)
@@ -73,7 +73,8 @@ class FaceEnhancement(object):
 		full_img = np.zeros(img.shape, dtype=np.uint8)
 
 		for i, (faceb, facial5points) in enumerate(zip(facebs, landms)):
-			if faceb[4] < self.threshold: continue
+			if faceb[4] < self.threshold:
+				continue
 			fh, fw = (faceb[3] - faceb[1]), (faceb[2] - faceb[0])
 
 			facial5points = np.reshape(facial5points, (2, 5))
@@ -91,7 +92,7 @@ class FaceEnhancement(object):
 			tmp_mask = cv2.resize(tmp_mask, (self.in_size, self.in_size), interpolation=self.interp)
 
 			tmp_mask = cv2.warpAffine(tmp_mask, tfm_inv, (width, height), flags=self.interp)
-			
+
 			# from PIL import Image
 
 			# tmp_mask_pil = Image.fromarray(tmp_mask)

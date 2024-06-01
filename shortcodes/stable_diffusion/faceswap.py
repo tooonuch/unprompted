@@ -1,19 +1,26 @@
 class Shortcode():
 	def __init__(self, Unprompted):
+		def unload():
+			self.fs_pipeline = {}
+			for pipeline in self.fs_pipelines:
+				self.fs_pipeline[pipeline] = {}
+			self.fs_face_path = None
+			self.fs_face_embeddings = {}
+
 		self.Unprompted = Unprompted
 		self.description = "Swap the face in an image using one or more techniques. Note that the Facelift template is more user-friendly for this purpose."
 
-		self.fs_pipelines = ["face_fusion", "ghost", "insightface"]
+		self.fs_pipelines = ["face_fusion", "ghost", "insightface", "unload"]
 		self.fs_now = ""
-		self.fs_pipeline = {}
-		for pipeline in self.fs_pipelines:
-			self.fs_pipeline[pipeline] = {}
-
-		self.fs_face_path = None
+		self.unload = unload
+		unload()
 
 		self.destination = "after"
 
 	def run_atomic(self, pargs, kwargs, context):
+		self.Unprompted.shortcode_install_requirements(f"general", ["tensorflow", "onnx"])
+		self.Unprompted.shortcode_install_requirements(f"insightface", ["albumentations", "mxnet -f https://dist.mxnet.io/python/cpu"])
+		self.Unprompted.shortcode_install_requirements(f"GPU Support (CUDA 12 package)", ["onnxruntime-gpu -i https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/"])
 		import lib_unprompted.helpers as helpers
 		from PIL import Image
 
@@ -39,6 +46,10 @@ class Shortcode():
 
 		face_string = self.Unprompted.parse_advanced(pargs[0])
 		faces = face_string.split(self.Unprompted.Config.syntax.delimiter)
+		# Remove empty strings
+		faces = [face for face in faces if face]
+
+		self.Unprompted.log.debug(f"Faces: {faces}")
 
 		def get_cached(part):
 			if part in self.fs_pipeline[self.fs_now] and part not in unload_parts and "all" not in unload_parts and "export_embedding" not in pargs:
@@ -56,7 +67,10 @@ class Shortcode():
 			gender_bonus = self.Unprompted.parse_arg("gender_bonus", 50)
 			age_influence = self.Unprompted.parse_arg("age_influence", 1)
 
-			if swap_method == "insightface":
+			if swap_method == "unload":
+				self.unload()
+				continue
+			elif swap_method == "insightface":
 				if prefer_gpu:
 					import lib_unprompted.insightface_cuda as insightface
 				else:
@@ -79,8 +93,10 @@ class Shortcode():
 						det_size_half = (det_size[0] // 2, det_size[1] // 2)
 						return get_faces(img_data, face_index=face_index, det_size=det_size_half)
 					try:
-						if face_index == -1: return sorted(face, key=lambda x: x.bbox[0])
-						else: return sorted(face, key=lambda x: x.bbox[0])[face_index]
+						if face_index == -1:
+							return sorted(face, key=lambda x: x.bbox[0])
+						else:
+							return sorted(face, key=lambda x: x.bbox[0])[face_index]
 					except IndexError:
 						return None
 
@@ -89,8 +105,8 @@ class Shortcode():
 					temp_dict = []
 					for facepath in faces:
 						# Avoid reloading faces that were already in self.fs_face_path
-						if self.fs_face_path and facepath in self.fs_face_path:
-							temp_dict.append(self.fs_pipeline[swap_method]["face"][self.fs_face_path.index(facepath)])
+						if facepath in self.fs_face_embeddings:
+							temp_dict.append(self.fs_face_embeddings[facepath])
 						else:
 							# Check if the facepath is a safetensors file:
 							if facepath.endswith(".safetensors"):
@@ -109,6 +125,7 @@ class Shortcode():
 
 							if face:
 								temp_dict.append(face)
+								self.fs_face_embeddings[facepath] = face
 
 					self.fs_pipeline[swap_method]["face"] = temp_dict
 
@@ -193,7 +210,8 @@ class Shortcode():
 								# Remove this target face to avoid swapping it with the remaining images
 								target_faces.pop(most_similar_idx)
 								# Break out of the source_face loop in case there are no more target faces
-								if not target_faces: break
+								if not target_faces:
+									break
 							else:
 								self.log.info("No faces met the minimum similarity threshold.")
 
@@ -206,6 +224,8 @@ class Shortcode():
 			elif swap_method == "face_fusion":
 				import cv2
 				import numpy as np
+				if not self.Unprompted.shortcode_install_requirements("face_fusion", ["modelscope"]):
+					continue
 				from modelscope.outputs import OutputKeys
 				from modelscope.pipelines import pipeline
 				from modelscope.utils.constant import Tasks
@@ -502,20 +522,24 @@ class Shortcode():
 		# Free cache
 		for part in unload_parts:
 			self.fs_pipeline[swap_method].pop(part, None)
-		if "face" in unload_parts: self.fs_face_path = None
-		else: self.fs_face_path = face_string
+		if "face" in unload_parts:
+			self.fs_face_path = None
+			self.fs_face_embeddings = {}
+		else:
+			self.fs_face_path = face_string
 
 		return ""
 
 	def ui(self, gr):
-		with gr.Row():
-			gr.Image(label="New face image(s) to swap to 🡢 str", type="filepath", interactive=True)
-			gr.Image(label="Body image to perform swap on (defaults to SD output) 🡢 body", type="filepath", interactive=True)
-		gr.Dropdown(label="Faceswap pipeline(s) 🡢 pipeline", choices=self.fs_pipelines, value="insightface", multiselect=True, interactive=True, info="You can enable multiple pipelines with the standard delimiter. Please note that each pipeline must download its models on first use.")
-		gr.Slider(label="Gender bonus 🡢 gender_bonus", value=50, maximum=1000, minimum=0, interactive=True, step=1)
-		gr.Slider(label="Age influence multiplier 🡢 age_influence", value=1, maximum=100, minimum=0, interactive=True, step=1)
-		gr.Checkbox(label="Export all faces as a blended safetensors embedding 🡢 export_embedding", value=False)
-		gr.Textbox(label="Path to save the exported embedding 🡢 embedding_path", placeholder="unprompted/user/faces/blended_faces.safetensors", interactive=True)
-		gr.Slider(label="Visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01)
-		gr.Checkbox(label="Prefer GPU 🡢 prefer_gpu", value=True, interactive=True)
-		gr.Dropdown(label="Unload pipeline parts from cache 🡢 unload", choices=["all", "face", "model", "analyser"], multiselect=True, interactive=True, info="You can release some or all of the pipeline parts from your cache after inference. Useful for low-memory devices.")
+		return [
+		    gr.Image(label="New face image(s) to swap to 🡢 arg_str", type="filepath", interactive=True),
+		    gr.Image(label="Body image to perform swap on (defaults to SD output) 🡢 body", type="filepath", interactive=True),
+		    gr.Dropdown(label="Faceswap pipeline(s) 🡢 pipeline", choices=self.fs_pipelines, value="insightface", multiselect=True, interactive=True, info="You can enable multiple pipelines with the standard delimiter. Please note that each pipeline must download its models on first use."),
+		    gr.Slider(label="Gender bonus 🡢 gender_bonus", value=50, maximum=1000, minimum=0, interactive=True, step=1),
+		    gr.Slider(label="Age influence multiplier 🡢 age_influence", value=1, maximum=100, minimum=0, interactive=True, step=1),
+		    gr.Checkbox(label="Export all faces as a blended safetensors embedding 🡢 export_embedding", value=False),
+		    gr.Textbox(label="Path to save the exported embedding 🡢 embedding_path", placeholder="unprompted/user/faces/blended_faces.safetensors", interactive=True),
+		    gr.Slider(label="Visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01),
+		    gr.Checkbox(label="Prefer GPU 🡢 prefer_gpu", value=True, interactive=True),
+		    gr.Dropdown(label="Unload pipeline parts from cache 🡢 unload", choices=["all", "face", "model", "analyser"], multiselect=True, interactive=True, info="You can release some or all of the pipeline parts from your cache after inference. Useful for low-memory devices."),
+		]

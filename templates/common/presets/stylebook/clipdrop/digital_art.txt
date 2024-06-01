@@ -1,0 +1,2 @@
+[set stylebook_subject]concept art [get stylebook_subject] . digital artwork, illustrative, painterly, matte painting, highly detailed[/set]
+[set stylebook_negative]photo, photorealistic, realism, ugly[/set]

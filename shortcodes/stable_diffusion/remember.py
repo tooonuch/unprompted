@@ -14,4 +14,6 @@ class Shortcode():
 		self.globals = []
 
 	def ui(self, gr):
-		gr.Textbox(label="Arbitrary variable names to remember 🡢 verbatim", max_lines=1, placeholder="var_a var_b var_c")
+		return [
+		    gr.Textbox(label="Arbitrary variable names to remember 🡢 arg_verbatim", max_lines=1, placeholder="var_a var_b var_c"),
+		]

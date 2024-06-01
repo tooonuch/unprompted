@@ -14,10 +14,14 @@ class Shortcode():
 		else:
 			_max = pargs[0]
 
-		if ("_float" in pargs): return (random.uniform(float(_min), float(_max)))
-		else: return (random.randint(int(_min), int(_max)))
+		if ("_float" in pargs):
+			return (random.uniform(float(_min), float(_max)))
+		else:
+			return (random.randint(int(_min), int(_max)))
 
 	def ui(self, gr):
-		gr.Number(label="Minimum number 🡢 _min", value=0, interactive=True)
-		gr.Number(label="Maximum number 🡢 _max", value=10, interactive=True)
-		gr.Checkbox(label="Evaluate as floats instead of integers 🡢 _float")
+		return [
+		    gr.Number(label="Minimum number 🡢 _min", value=0, interactive=True),
+		    gr.Number(label="Maximum number 🡢 _max", value=10, interactive=True),
+		    gr.Checkbox(label="Evaluate as floats instead of integers 🡢 _float"),
+		]

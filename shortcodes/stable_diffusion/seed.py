@@ -28,4 +28,6 @@ class Shortcode():
 		return ""
 
 	def ui(self, gr):
-		gr.Text(label="New seed value")
+		return [
+		    gr.Text(label="New seed value"),
+		]

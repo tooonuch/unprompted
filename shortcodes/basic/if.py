@@ -20,7 +20,8 @@ class Shortcode():
 		# Normal expressions
 		_is = kwargs["_is"] if "_is" in kwargs else "=="
 		for key, value in kwargs.items():
-			if self.Unprompted.is_system_arg(key): continue  # Skips system arguments
+			if self.Unprompted.is_system_arg(key):
+				continue  # Skips system arguments
 
 			this_value = self.Unprompted.parse_advanced(value, context)
 
@@ -39,7 +40,8 @@ class Shortcode():
 
 		# Support truthy checks
 		for key in pargs:
-			if self.Unprompted.is_system_arg(key): continue
+			if self.Unprompted.is_system_arg(key):
+				continue
 			if (self.Unprompted.parse_advanced(key, context)):  #  == 1
 				if _any:
 					is_true = True
@@ -59,7 +61,9 @@ class Shortcode():
 		return (to_return)
 
 	def ui(self, gr):
-		gr.Textbox(label="Conditional statement 🡢 my_var", max_lines=1)
-		gr.Dropdown(label="Evaluation method 🡢 _is", choices=["==", "!=", "<", "<=", ">", ">="], value="==")
-		gr.Checkbox(label="Invert evaluation such that a true statement will return false 🡢 _not")
-		gr.Checkbox(label="Return true if any one of multiple conditions are true 🡢 _any")
+		return [
+		    gr.Textbox(label="Conditional statement 🡢 my_var", max_lines=1),
+		    gr.Dropdown(label="Evaluation method 🡢 _is", choices=["==", "!=", "<", "<=", ">", ">="], value="=="),
+		    gr.Checkbox(label="Invert evaluation such that a true statement will return false 🡢 _not"),
+		    gr.Checkbox(label="Return true if any one of multiple conditions are true 🡢 _any"),
+		]

@@ -1,0 +1,1 @@
+[sets cfg_scale=9 sampler_name="DPM++ 2M" steps=30 denoising_strength=1.0 mask_blur=8]

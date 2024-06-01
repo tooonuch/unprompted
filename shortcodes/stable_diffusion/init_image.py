@@ -10,24 +10,21 @@ class Shortcode():
 
 	def run_atomic(self, pargs, kwargs, context):
 		from PIL import Image
+		from lib_unprompted.helpers import str_to_pil
 
-		path = self.Unprompted.parse_alt_tags(pargs[0], context)
+		if len(pargs) == 0:
+			self.log.info("Getting the current image...")
+			return self.Unprompted.current_image()
+		else:
+			img = str_to_pil(self.Unprompted.parse_advanced(pargs[0], ""))
 
-		files = glob.glob(path)
-		if (len(files) == 0):
-			self.log.error(f"No files found at this location: {path}")
-			return ("")
-		file = random.choice(files)
+			if img:
+				self.Unprompted.current_image(img)
+			# self.Unprompted.shortcode_user_vars["init_images"] = []
 
-		self.log.debug(f"Loading file: {file}")
-
-		if not os.path.exists(file):
-			self.log.error(f"File does not exist: {file}")
-			return ("")
-
-		self.Unprompted.shortcode_user_vars["init_images"] = [Image.open(file)]
-
-		return ""
+			return ""
 
 	def ui(self, gr):
-		gr.File(label="Image path", file_type="image")
+		return [
+		    gr.File(label="Image path", file_type="image"),
+		]

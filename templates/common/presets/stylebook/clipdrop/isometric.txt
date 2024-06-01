@@ -1,0 +1,2 @@
+[set stylebook_subject]isometric style [get stylebook_subject] . vibrant, beautiful, crisp, detailed, ultra detailed, intricate[/set]
+[set stylebook_negative]deformed, mutated, ugly, disfigured, blur, blurry, noise, noisy, realistic, photographic[/set]

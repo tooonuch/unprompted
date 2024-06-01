@@ -25,19 +25,26 @@ class Shortcode():
 		import numpy as np
 		from PIL import Image
 		import lib_unprompted.helpers as helpers
+		import time
 
-		methods = kwargs["method"] if "method" in kwargs else "gpen"
-		if self.Unprompted.Config.syntax.delimiter in methods: methods = methods.split(self.Unprompted.Config.syntax.delimiter)
-		else: methods = [methods]
+		methods = self.Unprompted.parse_arg("method", "GPENO")
+		if self.Unprompted.Config.syntax.delimiter in methods:
+			methods = methods.split(self.Unprompted.Config.syntax.delimiter)
+		else:
+			methods = [methods]
+
+		backbone = self.Unprompted.parse_arg("backbone", "RetinaFace-R50")
 
 		visibility = float(self.Unprompted.parse_advanced(kwargs["visibility"], context)) if "visibility" in kwargs else 1.0
-		resolution_preset = str(kwargs["resolution_preset"]) if "resolution_preset" in kwargs else "512"
+		resolution_preset = self.Unprompted.parse_arg("resolution_preset", "512")
 		unload = self.Unprompted.shortcode_var_is_true("unload", pargs, kwargs)
 
 		downscale_method = self.Unprompted.parse_arg("downscale_method", "Bilinear")
 		downscale_method = self.resample_methods[downscale_method]
 
 		result = None
+
+		models_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}"
 
 		_image = self.Unprompted.parse_alt_tags(kwargs["image"], context) if "image" in kwargs else False
 		if _image:
@@ -46,15 +53,20 @@ class Shortcode():
 			this_image = self.Unprompted.current_image()
 
 		for this_method in methods:
+			start_time = time.time()
 			self.log.info(f"{this_method} face restoration starting...")
 
 			restoration_method = this_method.lower()
 
-			if restoration_method == "gpen":
-				import lib_unprompted.helpers as helpers
-				import lib_unprompted.gpen.__init_paths
+			if restoration_method == "gpen" or restoration_method == "gpeno":
 				import torch
-				from lib_unprompted.gpen.face_enhancement import FaceEnhancement
+				import lib_unprompted.helpers as helpers
+				if restoration_method == "gpen":
+					import lib_unprompted.gpen.__init_paths
+					from lib_unprompted.gpen.face_enhancement import FaceEnhancement
+				else:
+					import lib_unprompted.gpeno.__init_paths
+					from lib_unprompted.gpeno.face_enhancement import FaceEnhancement
 				import os
 				import cv2
 				import glob
@@ -86,7 +98,6 @@ class Shortcode():
 				args = helpers.AttrDict(kwargs)
 				img = cv2.cvtColor(np.array(this_image), cv2.COLOR_RGB2BGR)
 
-				models_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}"
 				gpen_dir = f"{models_dir}/gpen/"
 
 				if args.model == "GPEN-BFR-512":
@@ -100,12 +111,16 @@ class Shortcode():
 				# Additional dependencies
 				helpers.download_file(f"{gpen_dir}/ParseNet-latest.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/ParseNet-latest.pth")
 				helpers.download_file(f"{gpen_dir}/realesrnet_x2.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/realesrnet_x2.pth")
-				helpers.download_file(f"{gpen_dir}/RetinaFace-R50.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/RetinaFace-R50.pth")
+				if backbone == "RetinaFace-R50":
+					helpers.download_file(f"{gpen_dir}/RetinaFace-R50.pth", "https://public-vigen-video.oss-cn-shanghai.aliyuncs.com/robin/models/RetinaFace-R50.pth")
+				elif backbone == "mobilenet0.25_Final":
+					helpers.download_file(f"{gpen_dir}/mobilenet0.25_Final.pth", "https://drive.google.com/uc?export=download&id=15zP8BP-5IvWXWZoYTNdvUJUiBqZ1hxu1")
 
 				if unload or not self.gpen_processor or self.gpen_cache_model != resolution_preset:
 					self.log.info("Loading FaceEnhancement object...")
+					self.log.debug(f"Device is {args.use_cuda}")
 					self.gpen_cache_model = resolution_preset
-					self.gpen_processor = FaceEnhancement(args, base_dir=f"{models_dir}/", in_size=args.in_size, model=args.model, use_sr=args.use_sr, device=args.use_cuda, interp=downscale_method)
+					self.gpen_processor = FaceEnhancement(args, base_dir=f"{models_dir}/", in_size=args.in_size, model=args.model, use_sr=args.use_sr, device=args.use_cuda, interp=downscale_method, backbone=backbone, log=self.log)
 				else:
 					self.log.info("Using cached FaceEnhancement object.")
 
@@ -117,6 +132,43 @@ class Shortcode():
 					self.log.debug("Unloading GPEN from cache.")
 					self.gpen_cache_model = ""
 					self.gpen_processor = None
+			elif restoration_method == "restoreformerplusplus" or restoration_method == "restoreformer":
+				import cv2
+				import numpy as np
+				import torch
+				import os
+				if not self.Unprompted.shortcode_install_requirements(f"{restoration_method} restoration method", ["basicsr==1.4.2", "facexlib==0.2.5"]):
+					continue
+
+				from basicsr.utils import imwrite
+
+				from lib_unprompted.restoreformerplusplus.RestoreFormer.RestoreFormer import RestoreFormer
+
+				if restoration_method == "restoreformer":
+					arch = "RestoreFormer"
+					model_name = "RestoreFormer"
+					url = "https://github.com/wzhouxiff/RestoreFormerPlusPlus/releases/download/v1.0.0/RestoreFormer.ckpt"
+				else:
+					arch = "RestoreFormer++"
+					model_name = "RestoreFormer++"
+					url = "https://github.com/wzhouxiff/RestoreFormerPlusPlus/releases/download/v1.0.0/RestoreFormer++.ckpt"
+
+				# determine model paths
+				restoreformer_path = f"{models_dir}/restoreformer"
+				model_path = os.path.join(restoreformer_path, model_name + ".ckpt")
+
+				if not helpers.download_file(model_path, url):
+					continue
+
+				restorer = RestoreFormer(model_path=model_path, upscale=1, arch=arch, bg_upsampler=None)
+
+				img = cv2.cvtColor(np.array(this_image), cv2.COLOR_RGB2BGR)
+
+				cropped_faces, restored_faces, restored_img = restorer.enhance(img, has_aligned=False, only_center_face=False, paste_back=True)
+
+				result = Image.fromarray(cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB))
+
+				# if unload:
 
 			# built-in restore methods
 			else:
@@ -129,7 +181,7 @@ class Shortcode():
 
 						break
 
-			self.log.info(f"{this_method} face restoration completed.")
+			self.log.info(f"{this_method} face restoration completed in {round(time.time() - start_time, 4)}s.")
 
 		# Append to output window
 		try:
@@ -140,9 +192,11 @@ class Shortcode():
 		return ""
 
 	def ui(self, gr):
-		gr.Dropdown(label="Face restoration method 🡢 method", choices=[restorer.name() for restorer in shared.face_restorers] + ["GPEN"], value="GPEN", multiselect=True, interactive=True, info="You can enable multiple restoration methods with the standard delimiter.")
-		gr.Slider(label="Restoration visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01)
-		with gr.Accordion("🎭 GPEN Settings", open=False):
-			gr.Radio(label="Resolution Preset 🡢 resolution_preset", choices=["512", "1024", "2048"], value="512", interactive=True, info="Increases clarity but may lead to an oversharpened look - counteract with the visibility slider.")
-			gr.Dropdown(label="Downscale interpolation method 🡢 downscale_method", choices=list(self.resample_methods.keys()), value="Bilinear", interactive=True)
-			gr.Checkbox(label="Unload GPEN model after inference 🡢 unload", info="Useful for devices with low memory, but increases inference time.")
+		objs = []
+		objs.append(gr.Dropdown(label="Face restoration method 🡢 method", choices=[restorer.name() for restorer in shared.face_restorers] + ["GPENO", "GPEN", "RestoreFormer", "RestoreFormerPlusPlus"], value="GPENO", multiselect=True, interactive=True, info="You can enable multiple restoration methods with the standard delimiter."))
+		objs.append(gr.Slider(label="Restoration visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01))
+		with gr.Accordion("🎭 Exclusive GPEN Settings", open=False):
+			objs.append(gr.Radio(label="Resolution Preset 🡢 resolution_preset", choices=["512", "1024", "2048"], value="512", interactive=True, info="Increases clarity but may lead to an oversharpened look - counteract with the visibility slider."))
+			objs.append(gr.Dropdown(label="Downscale interpolation method 🡢 downscale_method", choices=list(self.resample_methods.keys()), value="Bilinear", interactive=True))
+			objs.append(gr.Checkbox(label="Unload GPEN model after inference 🡢 unload", info="Useful for devices with low memory, but increases inference time."))
+		return objs

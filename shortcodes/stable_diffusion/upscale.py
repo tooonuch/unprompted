@@ -13,18 +13,19 @@ class Shortcode():
 		from PIL import Image
 		import lib_unprompted.helpers as helpers
 
-		image = self.Unprompted.parse_arg("image",False)
-		if not image: image = self.Unprompted.current_image()
-		if isinstance(image,str):
+		image = self.Unprompted.parse_arg("image", False)
+		if not image:
+			image = self.Unprompted.current_image()
+		if isinstance(image, str):
 			image = Image.open(image)
 		orig_image = image.copy()
 
-		scale = self.Unprompted.parse_arg("scale",1)
-		visibility = self.Unprompted.parse_arg("visibility",1.0)
-		limit = self.Unprompted.parse_arg("limit",100)
-		keep_res = self.Unprompted.parse_arg("keep_res",False)
+		scale = self.Unprompted.parse_arg("scale", 1)
+		visibility = self.Unprompted.parse_arg("visibility", 1.0)
+		limit = self.Unprompted.parse_arg("limit", 100)
+		keep_res = self.Unprompted.parse_arg("keep_res", False)
 
-		_models = helpers.ensure(self.Unprompted.parse_arg("models","None"),list)
+		_models = helpers.ensure(self.Unprompted.parse_arg("models", "None"), list)
 		models = []
 		for model in _models:
 			for upscaler in shared.sd_upscalers:
@@ -52,8 +53,10 @@ class Shortcode():
 		return ""
 
 	def ui(self, gr):
-		gr.Image(label="Image to perform upscaling on (defaults to SD output) 🡢 image",type="filepath",interactive=True)
-		gr.Dropdown(label="Upscaler Model(s) 🡢 models",choices=[upscaler.name for upscaler in shared.sd_upscalers],multiselect=True)
-		gr.Slider(label="Upscale Factor 🡢 scale", value=1, maximum=16, minimum=1, interactive=True, step=1)
-		gr.Slider(label="Upscale Visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01)
-		gr.Checkbox(label="Keep original resolution 🡢 keep_res", value=False, interactive=True)
+		return [
+		    gr.Image(label="Image to perform upscaling on (defaults to SD output) 🡢 image", type="filepath", interactive=True),
+		    gr.Dropdown(label="Upscaler Model(s) 🡢 models", choices=[upscaler.name for upscaler in shared.sd_upscalers], multiselect=True),
+		    gr.Slider(label="Upscale Factor 🡢 scale", value=1, maximum=16, minimum=1, interactive=True, step=1),
+		    gr.Slider(label="Upscale Visibility 🡢 visibility", value=1.0, maximum=1.0, minimum=0.0, interactive=True, step=0.01),
+		    gr.Checkbox(label="Keep original resolution 🡢 keep_res", value=False, interactive=True),
+		]

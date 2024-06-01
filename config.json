@@ -4,12 +4,12 @@
 	"beta_features":false,
 	"advanced_expressions":true,
 	"template_directory":"templates",
-	"txt_format":".txt",
 	"base_dir":"",
 	"subdirectories":
 	{
 		"shortcodes":"shortcodes",
-		"models":"models"
+		"models":"models",
+		"workflows":"workflows"
 	},
 	"globals":
 	{
@@ -48,8 +48,9 @@
 	"syntax":
 	{
 		"sanitize_before":{"\n":"\\n","\t":""},
-		"sanitize_after":{"\\n":" ","NEWLINE":"\n"},
-		"sanitize_block":{"\n":"","NEWLINE":"\n"},
+		"sanitize_after":{"\\n":" "},
+		"sanitize_block":{"\n":""},
+		"sanitize_last":{"%SPACE%":" ", "%NEWLINE%":"\n"},
 		"tag_start":"[",
 		"tag_end":"]",
 		"tag_start_alt":"{",
@@ -73,6 +74,8 @@
 		"batch_size_method":"standard",
 		"show_extra_generation_params":true,
 		"template_editor":true,
+		"cached_images_limit":4,
+		"resolutions":{"sd1":512,"sd2":768,"sdxl":1024,"none":1024},
 		"controlnet":
 		{
 			"extension":"sd-webui-controlnet",
@@ -109,6 +112,7 @@
 		"wizard_shortcodes":true,
 		"wizard_templates":true,
 		"wizard_capture":true,
+		"wizard_workflows":true,
 		"wizard_open":false,
 		"wizard_default_shortcode":"txt2mask",
 		"wizard_prepends":false,

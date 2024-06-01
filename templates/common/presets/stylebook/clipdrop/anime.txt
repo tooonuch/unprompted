@@ -1,0 +1,2 @@
+[set stylebook_subject]anime artwork [get stylebook_subject] . anime style, key visual, vibrant, studio anime, highly detailed[/set]
+[set stylebook_negative]photo, deformed, black and white, realism, disfigured, low contrast[/set]

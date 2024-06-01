@@ -3,7 +3,97 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>10.12.0 - 2 May 2024</summary>
+<details open><summary>11.0.0 - 31 May 2024</summary>
+
+### Added
+- Template Workflows: You can now save the settings for your active templates and shortcodes to a custom JSON file! Quickly swap between workflows and share them with others
+- Wizard `[template]` now supports the `id` kwarg: if specified, this value will be saved to the workflow JSON rather than the template name - this is useful if the name often changes between updates (i.e. if it contains a version number)
+- Overhauled the introductory section of templates and shortcodes in the Wizard UI: each now has an assortment of tabs (About, Documentation, Changelog)
+- Templates that utilize presets (`templates/common/presets/...`) will also look in `templates/user/presets` now
+- Stylebook v0.1.0
+- Bodysnatcher v2.0.0
+- Facelift v0.2.0
+- Magic Spice v0.1.0
+- Distillery v0.2.1
+- Regional Prompter Buddy v0.2.0
+- New feature `Skip gen, use last image(s)`: This will pseudo-skip the image generation process by setting inference steps to 1, then it replaces the result with a cached copy of the last image(s) you made - useful for testing Unprompted operations on an existing image
+- New setting `Config.stable_diffusion.cached_images_limit`: Maximum number of generated images to store in the cache for use with the new "Skip generation" feature
+- Unprompted now has partial support for passing image objects through variables: the new helper function `str_to_pil()` converts a string beginning with `<PIL.Image.Image...` to an image object through the memory address
+- New shortcode `[image_edit]`: Performs a wide variety of image operations
+- `[array]`: Now supports the `_start` and `_end` kwargs, which allow you to retrieve a consecutive range of values from the array
+- `[array]`: When `_start` and/or `_end` are specified in addition to `_fill`, only values within the specified range will be affected by the `_fill`
+- `[array]`: Now supports the `_step` kwarg, which adjusts the step size for processing the `_start` and `_end` range (defaults to 1, or every index)
+- `[array]`: Now supports the `_inclusive` kwarg, which determines whether the upper bound of the range (`_end`) should be treated as inclusive or exclusive (defaults to true)
+- `[call]`: Now supports the `_places` kwarg, which lets you define multiple possible locations for the template you're calling - it will use the first location that exists
+- `[img2pez]`: The `image_path` kwarg now supports loading all images in a folder via wildcard
+- `[img2pez]`: Now supports a `target_prompt` which can be used on its own or in addition to `image_path`
+- `[img2pez]`: Now supports `clip_preset` which provides an easy way to select a compatible pair of `clip_model` and `pretrain_clip` settings
+- `[wizard]`: Now supports the `tab` block type
+- `[wizard]`: Now supports the `markdown` block type
+- `[faceswap]`: Call the "unload" pipeline to free the cache on demand
+- `[filelist]`: Improved handling of subdirectory wildcards
+- `[filelist]`: Now supports the `_recursive` parg to enable this option in the `glob()` filter
+- `[filelist]`: Now supports parsing multiple paths with a delimiter
+- `[filelist]`: Now supports the `_places` kwarg, which is a delimited list of paths to use in place of `%PLACE%` of your main path string
+- `[replace]`: Now supports the `_now` parg to run the replacement query before executing inner content
+- `[replace]`: Now supports the `_strict` parg to only evaluate "to" expressions on matches
+- `[interrogate]`: Now supports "WaifuDiffusion as an interrogation `method`
+- `[interrogate]`: Now supports the `confidence_threshold` kwarg for use with the WaifuDiffusion method, set between 0.0 and 1.0
+- `[interrogate]`: Now supports the `blacklist_tags` kwarg for use with the WaifuDiffusion method
+- `[restore_faces]`: New restoration methods `RestoreFormer` and `RestoreFormerPlusPlus` (Note: These methods are fast, but GPEN is still the king in terms of quality)
+- `[restore_faces]`: Implemented a series of performance optimizations for GPEN which are now available as a separate restoration method `GPENO` (this also disables unnecessary operations such as SR.)
+- `[restore_faces]`: Now supports the `backbone` kwarg for GPEN RetinaFace network
+- `[init_image]`: Will now return the current image if no pargs are specified
+- `[img2img_autosize]`: The `target` property now takes your model's architecture into account (sd1/sdxl)
+- `[get]`: Now supports Image variables
+- `[for]`: Variable initialization is now optional, allowing for greater control over the loop processing, e.g. `[for "some_var < 5" "{set some_var _append}2{/set}"]` is a valid loop
+- `[txt2mask]`: New method `tris` ([source](https://github.com/fawnliu/TRIS))
+- `[txt2mask]`: Now supports `blur` kwarg, particularly useful outside of img2img mode
+- Wizard Template banner images are now automatically loaded; make sure the banner is in the same directory as the template, and has the same filename with a `.png` extension
+- Wizard dropdown blocks now support `_allow_custom_value` parg
+- The `wizard_generate_template()` function now returns a delimited string for UI elements with list values (e.g. multiselect dropdowns)
+- The `parse_filepath()` method can now take a delimited list of paths
+- You can override the banner filepath in `[template]` using the `banner` kwarg
+- New function `shortcode_install_requirements()` to install shortcode dependencies when needed, instead of installing everything at WebUI startup
+- New setting `Config.syntax.sanitize_last`: Rules in this section are immune to the stripping of extra spaces
+- Special strings `%SPACE%` and `%NEWLINE%` for when you need fine control over the resulting string
+- New system variable `sd_res`: resolution that corresponds to your checkpoint's architecture (i.e. 512 for sd1, 768 for sd2, 1024 for sdxl)
+- `docs/TODO.md` for things I'd like to implement in the future
+- New routine `goodbye()`, the Unprompted order of operations is now `run()` -> `cleanup()` -> `after()` -> `goodbye()`
+
+### Changed
+- Reworked `wizard_generate_shortcode()`, `wizard_generate_template()`, and `wizard_process_autoincludes()` methods to eliminate the need for many event listeners - greatly improving the UI performance
+- The Wizard `[template]` shortcode has been converted from a block to an atomic shortcode
+- Renamed `templates/common/functions` to `templates/common/wizard`
+- Organized built-in Wizard templates into individual subfolders
+- Gradio elements created by `[wizard]` will no longer save to the WebUI's `ui-config.json`
+- Replaced the Wizard banner gradient effect with CSS
+- The Wizard dropdown `_multiselect` kwarg changed to a parg
+- The shortcode `ui()` method now expects Gradio objects to be returned as a list, which is necessary in order to support the new Workflow event listeners
+- The Wizard template shortcode generator will always wrap kwargs in quotation marks now, to prevent possible issues with replacement terms
+- Moved most install requirements into individual shortcodes
+- The Wizard generation text has been converted to a code block
+
+### Fixed
+- `[img2pez]`: Now requires `sentence-transformers==2.2.2` to prevent issue with newer versions of the module
+- `[faceswap]`: Fixed an issue related to caching of face embeddings
+- `[array]`: Fixed an issue when getting array values from a delimited string
+- `[txt2mask]`: Removed unnecessary read/write to disk operation
+- Corrected issue with `install.py` handling of required modules that include `==`
+- Fixed an issue where the `parse_arg()` function could interfere with the evaluation of `kwargs` and `pargs` in other methods
+- Gradio Image components created by the Wizard no longer steal clipboard focus from other WebUI Image components
+- Implemented `release()` event listeners to more accurately track changes in certain objects such as sliders
+
+### Removed
+- `[autotone]`: Equivalent functionality available in `[image_edit]`
+- `[resize]`: Equivalent functionality available in `[image_edit]`
+- All legacy shortcodes (`[file]`, `[controlnet]`, `[enable_multi_images]`)
+
+</details>
+
+<br>
+<details><summary>👴🏼 Older Versions</summary>
+<details><summary>10.12.0 - 2 May 2024</summary>
 
 ### Added
 - New presets at `common/presets/dimensions`: Easily set your width and height to popular values, with support for both SD 1.5 and SDXL models
@@ -471,8 +561,6 @@ This update introduces global variables, several image processing shortcodes and
 
 </details>
 
-<br>
-<details><summary>👴🏼 Older Versions</summary>
 <details><summary>9.16.1 - 7 September 2023</summary>
 
 ### Fixed

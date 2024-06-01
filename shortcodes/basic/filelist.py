@@ -9,34 +9,61 @@ class Shortcode():
 		self.description = "Returns a list of files at a given location using glob."
 
 	def run_atomic(self, pargs, kwargs, context):
-		file_string = self.Unprompted.parse_alt_tags(pargs[0], context)
+		import lib_unprompted.helpers as helpers
+		file_strings = helpers.ensure(self.Unprompted.parse_alt_tags(pargs[0], context).split(self.Unprompted.Config.syntax.delimiter), list)
 		_delimiter = self.Unprompted.parse_advanced(kwargs["_delimiter"], context) if "_delimiter" in kwargs else self.Unprompted.Config.syntax.delimiter
 		_basename = self.Unprompted.shortcode_var_is_true("_basename", pargs, kwargs)
 		_hide_ext = self.Unprompted.shortcode_var_is_true("_hide_ext", pargs, kwargs)
+		_recursive = self.Unprompted.parse_arg("_recursive", False)
 
-		# Relative path
-		if (file_string[0] == "."):
-			path = os.path.dirname(context) + "/" + file_string
-		else:
-			file_string = file_string.replace("%BASE_DIR%", self.Unprompted.base_dir)
+		_places = self.Unprompted.parse_arg("_places", "")
+		if _places:
+			new_file_strings = []
+			for place in _places:
+				for file_string in file_strings:
+					# Replace %PLACE% with the current place
+					new_file_strings += [file_string.replace("%PLACE%", place)]
 
-		files = glob.glob(file_string)
-		if (len(files) == 0):
-			self.log.error(f"No files found at this location: {file_string}")
-			return ("")
+			file_strings = new_file_strings
 
-		if _hide_ext:
-			for idx, file in enumerate(files):
-				files[idx] = os.path.splitext(file)[0]
+		all_files = ""
+		for file_string in file_strings:
+			# Relative path
+			if (file_string[0] == "."):
+				file_string = os.path.dirname(context) + "/" + file_string
+			else:
+				file_string = file_string.replace("%BASE_DIR%", self.Unprompted.base_dir)
 
-		if _basename:
-			for idx, file in enumerate(files):
-				files[idx] = os.path.basename(file)
+			# Calculate base_dir as the parent directory of the glob pattern up to the first wildcard
+			if "*" in file_string:
+				base_dir = file_string[:file_string.find("*")]
+			else:
+				base_dir = os.path.dirname(file_string)
 
-		files = _delimiter.join(files)
+			files = glob.glob(file_string, recursive=_recursive)
+			if (len(files) == 0):
+				if not _places:
+					self.log.warning(f"No files found at this location: {file_string}")
+				continue
 
-		return (files)
+			if _hide_ext:
+				for idx, file in enumerate(files):
+					files[idx] = os.path.splitext(file)[0]
+
+			if _basename:
+				for idx, file in enumerate(files):
+					# Calculate the relative path from the base directory to the file
+					relative_path = os.path.relpath(file, base_dir).replace("\\", "/")
+					files[idx] = relative_path
+
+			if all_files:
+				all_files += _delimiter
+			all_files += _delimiter.join(helpers.ensure(files, list))
+
+		return all_files
 
 	def ui(self, gr):
-		gr.Textbox(label="Filepath 🡢 str", max_lines=1)
-		gr.Textbox(label="Result delimiter 🡢 _delimiter", max_lines=1, value=self.Unprompted.Config.syntax.delimiter)
+		return [
+		    gr.Textbox(label="Filepath 🡢 arg_str", max_lines=1),
+		    gr.Textbox(label="Result delimiter 🡢 _delimiter", max_lines=1, value=self.Unprompted.Config.syntax.delimiter),
+		]

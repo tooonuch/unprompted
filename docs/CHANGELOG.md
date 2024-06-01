@@ -34,10 +34,10 @@ For more details on new features, please check the [Manual](./MANUAL.md).
 - `[filelist]`: Improved handling of subdirectory wildcards
 - `[filelist]`: Now supports the `_recursive` parg to enable this option in the `glob()` filter
 - `[filelist]`: Now supports parsing multiple paths with a delimiter
-- `[filelist]`: Now supports the `_places` kwarg, which is a delimited list of paths to use in place of `%PLACE%` of your main path string
+- `[filelist]`: Now supports the `_places` kwarg, which is a delimited list of paths to use in place of `%PLACE%` in your main path string
 - `[replace]`: Now supports the `_now` parg to run the replacement query before executing inner content
 - `[replace]`: Now supports the `_strict` parg to only evaluate "to" expressions on matches
-- `[interrogate]`: Now supports "WaifuDiffusion as an interrogation `method`
+- `[interrogate]`: Now supports "WaifuDiffusion" as an interrogation `method`
 - `[interrogate]`: Now supports the `confidence_threshold` kwarg for use with the WaifuDiffusion method, set between 0.0 and 1.0
 - `[interrogate]`: Now supports the `blacklist_tags` kwarg for use with the WaifuDiffusion method
 - `[restore_faces]`: New restoration methods `RestoreFormer` and `RestoreFormerPlusPlus` (Note: These methods are fast, but GPEN is still the king in terms of quality)
@@ -82,7 +82,6 @@ For more details on new features, please check the [Manual](./MANUAL.md).
 - Corrected issue with `install.py` handling of required modules that include `==`
 - Fixed an issue where the `parse_arg()` function could interfere with the evaluation of `kwargs` and `pargs` in other methods
 - Gradio Image components created by the Wizard no longer steal clipboard focus from other WebUI Image components
-- Implemented `release()` event listeners to more accurately track changes in certain objects such as sliders
 
 ### Removed
 - `[autotone]`: Equivalent functionality available in `[image_edit]`

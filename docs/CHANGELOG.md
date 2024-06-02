@@ -3,7 +3,16 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>11.0.0 - 31 May 2024</summary>
+<details open><summary>11.0.1 - 2 June 2024</summary>
+
+### Fixed
+- `[filter_tags]`: Support processing of secondary tags
+- `[img2img]`: Fixed issue related to `p.scripts` copy
+- txt2img2img: Fixed a potential issue with the `denoising_strength` value
+
+</details>
+
+<details><summary>11.0.0 - 31 May 2024</summary>
 
 ### Added
 - Template Workflows: You can now save the settings for your active templates and shortcodes to a custom JSON file! Quickly swap between workflows and share them with others

@@ -234,10 +234,10 @@ class Shortcode():
 		    override_settings=override_settings,
 		)
 
-		if self.Unprompted.shortcode_user_vars["scripts"]:
-			p.scripts = self.Unprompted.shortcode_user_vars["scripts"].copy()  # modules.scripts.scripts_img2img
-		else:
-			p.scripts = modules.scripts.scripts_img2img
+		# if self.Unprompted.shortcode_user_vars["scripts"]:
+		#	p.scripts = self.Unprompted.shortcode_user_vars["scripts"]
+		#else:
+		p.scripts = modules.scripts.scripts_img2img
 
 		for script in p.scripts.alwayson_scripts:
 			if script.name not in [None, "extra options", "refiner", "sampler"]:  # , "seed"

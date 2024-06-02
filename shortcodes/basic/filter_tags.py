@@ -17,6 +17,12 @@ class Shortcode():
 		self.clear = self.Unprompted.parse_arg("_clear", False)
 		self.must_match = self.Unprompted.parse_arg("_must_match", "any")
 
+		# Secondary tag support
+		for i, parg in enumerate(pargs):
+			pargs[i] = self.Unprompted.parse_alt_tags(parg)
+		for key, value in kwargs.items():
+			kwargs[key] = self.Unprompted.parse_alt_tags(value)
+
 		if _extend:
 			self.parg_tags.extend(pargs)
 			self.kwarg_tags.update(kwargs)

@@ -12,8 +12,10 @@ It then uses the result as the initial image for img2img, setting **Subject B** 
 [set mask_text _label="Mask Text"]head[/set]
 
 [get subject_a]
-[after]
+[after 0]
 	[sets prompt="{get subject_b}" denoising_strength=0.75]
+[/after]
+[after 1]
 	[txt2mask show][get mask_text][/txt2mask]
 	[img2img]
 [/after]

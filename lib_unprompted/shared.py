@@ -9,7 +9,7 @@ import time
 import logging
 from lib_unprompted import helpers
 
-VERSION = "11.0.0"
+VERSION = "11.0.1"
 
 
 def parse_config(base_dir="."):

@@ -7,8 +7,7 @@ setup(
     name='Unprompted',
     version='11.0.2',
     package_dir={'unprompted': '.'},
-    packages=['unprompted.lib_unprompted', 'unprompted.shortcodes', 'unprompted.shortcodes.basic', 'unprompted.shortcodes.stable_diffusion'
-              'unprompted.templates'],
+    packages=['unprompted.lib_unprompted', 'unprompted.shortcodes', 'unprompted.shortcodes.basic', 'unprompted.shortcodes.stable_diffusion', 'unprompted.templates'],
     package_data={
         '': ['*.json'],
         'unprompted.templates': ['common/*.txt']

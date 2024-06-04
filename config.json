@@ -50,7 +50,7 @@
 		"sanitize_before":{"\n":"\\n","\t":""},
 		"sanitize_after":{"\\n":" "},
 		"sanitize_block":{"\n":""},
-		"sanitize_last":{"%SPACE%":" ", "%NEWLINE%":"\n"},
+		"sanitize_last":{"%SPACE%":" ", "%NEWLINE%":"\n", "%PIPE%":"|", "%TAB%":"\t"},
 		"tag_start":"[",
 		"tag_end":"]",
 		"tag_start_alt":"{",

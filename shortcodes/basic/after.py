@@ -28,7 +28,10 @@ class Shortcode():
 			self.log.debug(f"Queueing up content (Batch #{batch_real_index}, After {index}): {content}")
 
 			if is_new_index or dupe_index_mode == "replace":
-				self.log.debug(f"Replacing content in After routine (index {index})")
+				if is_new_index:
+					self.log.debug(f"Adding content to new After routine (index {index})")
+				else:
+					self.log.debug(f"Replacing content in After routine (index {index})")
 				helpers.list_set(self.after_content[batch_real_index], index, content, "")
 			elif not is_new_index:
 				if dupe_index_mode == "concat":

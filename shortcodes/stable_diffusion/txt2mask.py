@@ -121,7 +121,7 @@ class Shortcode():
 			if len(neg_parsed) < 1:
 				negative_prompts = None
 			else:
-				negative_prompts = neg_parsed.split(self.Unprompted.Config.syntax.delimiter)
+				negative_prompts = neg_parsed # neg_parsed.split(self.Unprompted.Config.syntax.delimiter)
 				negative_prompt_parts = len(negative_prompts)
 		else:
 			negative_prompts = None

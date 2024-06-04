@@ -1,3 +1,4 @@
+[# Download here: https://huggingface.co/alimama-creative/EcomXL_controlnet_softedge]
 [sets 
  cn_0_enabled=1 cn_0_pixel_perfect=0 cn_0_module=softedge_pidinet cn_0_model=controlnetxlCNXL_ecomxlSoftedge cn_0_weight=1.0 cn_0_guidance_end=0.3 cn_0_control_mode=1 cn_0_processor_res=1024
  ]

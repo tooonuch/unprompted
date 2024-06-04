@@ -1,4 +1,4 @@
-[template name="Bodysnatcher v2.0.0" id="bodysnatcher"]
+[template name="Bodysnatcher v2.0.1" id="bodysnatcher"]
 [wizard tab _label="About"]
 	[wizard markdown]
 		Seamlessly replaces the selected subject of an image with a new one. This template works best with inpainting models and ControlNet.
@@ -50,7 +50,7 @@
 [/wizard]
 
 [wizard accordion _label="🎨 Color Correction Settings"]
-	[set color_correct_method _new _label="Color correct method" _ui="dropdown" _choices="none|hm|mvgd|mkl|hm-mvgd-hm|hm-mkl-hm"]hm-mkl-hm[/set]
+	[set color_correct_method _new _label="Color correct method" _ui="dropdown" _choices="none|hm|mvgd|mkl|hm-mvgd-hm|hm-mkl-hm"]mkl[/set]
 	[set color_correct_timing _new _label="Color correct timing" _info="Post may produce more accurate colors, but it tends to look a bit posterized" _ui="dropdown" _choices="pre|post"]pre[/set]
 	[set color_correct_strength _new _label="Color correct opacity" _ui="slider" _minimum=0 _maximum=1 _step=0.01 _info="Blends with the original image"]0.5[/set]
 [/wizard]
@@ -123,13 +123,13 @@
 		[zoom_enhance _alt mask_method="{get mask_method}" color_correct_method="{get color_correct_method}" color_correct_timing="{get color_correct_timing}" color_correct_strength="{get color_correct_strength}" sharpen_amount=0.0 mode="discard" mask="{get class} {get fix_bodypart}" replacement="{get prefix} {get subject} {get fix_bodypart} {get simple_description _before=' '}" cfg_scale_min="{get zoom_enhance_base_cfg}" denoising_max="{get zoom_enhance_denoising_max}" controlnet_preset="{get face_controlnet_preset}" debug="{get debug}" inherit_negative="{get zoom_enhance_inherit_negative}" show_original="{get show_original}" no_sync]
 	[/after]
 [/if]
-[set relevant_image][image_edit mask="{get bodysnatch_mask}" return copy save="relevant"][/set]
+[set relevant_image][image_edit mask="{get bodysnatch_mask}" return copy][/set]
 [get prefix] [get subject][get simple_description _before=" "], [get global_fluff][if interrogate]%SPACE%BREAK 
 [replace _from="_" _to=" "][interrogate bypass_cache method="WaifuDiffusion" model="SmilingWolf/wd-vit-tagger-v3" image="{get relevant_image}" blacklist_tags="{get blacklist_tags}"][/replace][/if]
 [if "color_correct_method != 'none'"]
 	[after]
 		[set new_image][image_edit mask="{get bodysnatch_mask}" return copy][/set]
 		[set new_image][image_edit input="{get new_image}" color_match="{get relevant_image}" color_match_method="{get color_correct_method}" color_match_strength="{get color_correct_strength}" return][/set]
-		[image_edit paste="{get new_image}" save="final"]
+		[image_edit paste="{get new_image}"]
 	[/after]
 [/if]

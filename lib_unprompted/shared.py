@@ -9,7 +9,7 @@ import time
 import logging
 from lib_unprompted import helpers
 
-VERSION = "11.0.1"
+VERSION = "11.0.2"
 
 
 def parse_config(base_dir="."):
@@ -471,7 +471,7 @@ class Unprompted:
 			return (True)
 		return (False)
 
-	def color_match(self, img_ref, img_src, method="hm-mkl-hm", opacity=1.0, iterations=1):
+	def color_match(self, img_ref, img_src, method="hm-mkl-hm", opacity=1.0, iterations=1, save=""):
 		from color_matcher import ColorMatcher
 		from color_matcher.normalizer import Normalizer
 		from PIL import Image
@@ -485,9 +485,12 @@ class Unprompted:
 		# Convert to PIL
 		img_new = Image.fromarray(Normalizer(img_new).uint8_norm())
 
+		if save:
+			img_new.save(save + ".png")
+
 		# Convert img_src_orig to PIL Image if it is not already
 		if not isinstance(img_src_orig, Image.Image):
-			img_src_orig = Image.fromarray(np.array(img_src_orig))
+			img_src_orig = Image.fromarray(numpy.array(img_src_orig))
 
 		# Blend img_new with img_src
 		if opacity < 1.0:

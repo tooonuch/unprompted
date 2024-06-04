@@ -1,4 +1,11 @@
-<details open><summary>2.0.0</summary>
+<details open><summary>2.0.1</summary>
+
+### Changed
+- Default `color_correct_method` updated to `mkl`
+
+</details>
+
+<details><summary>2.0.0</summary>
 
 ### Added
 - New ControlNet preset `xl_quickshot_v1`: Powered by softedge_hed model `controlnetxlCNXL_ecomxlSoftedge`

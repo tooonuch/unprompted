@@ -3,7 +3,19 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>11.0.1 - 2 June 2024</summary>
+<details open><summary>11.0.2 - 4 June 2024</summary>
+
+### Added
+- Special strings `%PIPE%` and `%TAB%` to override normal sanitization rules
+
+### Fixed
+- `[image_edit]`: Fixed an issue with `color_matcher_strength` incorrectly casting to int
+- `[image_edit]`: Added `color-matcher` dependency check
+- `[txt2mask]`: Fixed an issue with delimited `negative_mask` values
+- Updates to Bodysnatcher documentation
+</details>
+
+<details><summary>11.0.1 - 2 June 2024</summary>
 
 ### Fixed
 - `[filter_tags]`: Support processing of secondary tags

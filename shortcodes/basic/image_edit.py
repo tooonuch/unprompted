@@ -71,27 +71,49 @@ class Shortcode():
 
 				image.paste(paste, (paste_x, paste_y, x, y), paste)
 			elif this_arg == "color_match":
+				if not self.Unprompted.shortcode_install_requirements(f"color_match", ["color-matcher"]):
+					continue
+				import color_matcher
+				from color_matcher.normalizer import Normalizer
+				import numpy as np
+
 				reference_image = self.Unprompted.parse_image_kwarg(this_arg)
 				if not reference_image:
 					continue
 
+				save = ""
 				if "save" in kwargs:
-					reference_image.save(kwargs["save"] + "_reference.png")
+					save = kwargs["save"]
+					reference_image.save(save + "_reference.png")
 
 				color_match_method = self.Unprompted.parse_arg("color_match_method", "mkl")
-				color_match_strength = self.Unprompted.parse_arg("color_match_strength", 1)
+				color_match_strength = self.Unprompted.parse_arg("color_match_strength", 1.0)
 
-				image_cm = self.Unprompted.color_match(reference_image, image, color_match_method, color_match_strength)
+				# image_cm = self.Unprompted.color_match(reference_image, image, color_match_method, color_match_strength, save=f"{save}_step1.png")
+				cm = color_matcher.ColorMatcher()
+				img_ref = Normalizer(np.array(reference_image)).uint8_norm()
+				img_src = Normalizer(np.array(image)).uint8_norm()
+
+				img_cm = cm.transfer(src=img_src, ref=img_ref, method=color_match_method)
+				img_cm = Image.fromarray(Normalizer(img_cm).uint8_norm())
+
+				if "save" in kwargs:
+					img_cm.save(kwargs["save"] + "_color_match_step1.png")
+
+				# Mask the color matched image with the original image's alpha channel
+				img_cm.putalpha(image.getchannel("A"))
 
 				# Blend the color matched image with the original image
-				image = Image.blend(image, image_cm, color_match_strength)
+				print(image.size, img_cm.size)
+				print(image.mode, img_cm.mode)
+				image = Image.blend(image, img_cm, color_match_strength)
 
 				# color_match returns a new image, so we need to prevent it from being garbage collected
 				if "return" in pargs:
 					self.copied_images.append(image)
 
 				if "save" in kwargs:
-					image.save(kwargs["save"] + "_color_match.png")
+					image.save(kwargs["save"] + "_color_match_step2.png")
 			elif (this_arg == "width" or this_arg == "height") and not did_resize:
 				width = self.Unprompted.parse_arg("width", 0)
 				height = self.Unprompted.parse_arg("height", 0)

@@ -12,5 +12,6 @@ setup(
         '': ['*.json'],
         'unprompted.templates': ['common/*.txt']
     },
-    data_files=[('', ['config.json'])],
+    data_files=[('unprompted', ['config.json'])],
+    include_package_data=True,
 )

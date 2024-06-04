@@ -12,4 +12,5 @@ setup(
         '': ['*.json'],
         'unprompted.templates': ['common/*.txt']
     },
+    include_package_data=True,
 )

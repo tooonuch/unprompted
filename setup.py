@@ -5,13 +5,12 @@ from setuptools import setup
 
 setup(
     name='Unprompted',
-    version='11.0.2',
+    version='11.0.3',
     package_dir={'unprompted': '.'},
     packages=['unprompted.lib_unprompted', 'unprompted.shortcodes', 'unprompted.shortcodes.basic', 'unprompted.shortcodes.stable_diffusion', 'unprompted.templates'],
     package_data={
-        '': ['*.json'],
+        'unprompted.lib_unprompted': ['*.json'],
         'unprompted.templates': ['common/*.txt']
     },
-    data_files=[('unprompted', ['config.json'])],
     include_package_data=True,
 )

@@ -3,7 +3,14 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>11.0.2 - 4 June 2024</summary>
+<details open><summary>11.0.3 - 4 June 2024</summary>
+
+### Changed
+- Moved `config.json` to `lib_unprompted/config.json` as a workaround for inexplicable issues with setuptools for pip installation
+
+</details>
+
+<details><summary>11.0.2 - 4 June 2024</summary>
 
 ### Added
 - Special strings `%PIPE%` and `%TAB%` to override normal sanitization rules

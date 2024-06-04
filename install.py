@@ -3,9 +3,9 @@ import os
 this_path = os.path.dirname(os.path.realpath(__file__))
 debug = False
 
-if os.path.isfile(f"{this_path}/config_user.json"):
+if os.path.isfile(f"{this_path}/lib_unprompted/config_user.json"):
 	import json
-	cfg_dict = json.load(open(f"{this_path}/config_user.json", "r", encoding="utf8"))
+	cfg_dict = json.load(open(f"{this_path}/lib_unprompted/config_user.json", "r", encoding="utf8"))
 	if "skip_requirements" in cfg_dict and cfg_dict["skip_requirements"]:
 		print("Unprompted - Skipping install.py check per `skip_requirements` flag")
 		quit()

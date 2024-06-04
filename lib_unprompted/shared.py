@@ -9,12 +9,12 @@ import time
 import logging
 from lib_unprompted import helpers
 
-VERSION = "11.0.2"
+VERSION = "11.0.3"
 
 
 def parse_config(base_dir="."):
-	cfg_dict = json.load(open(f"{base_dir}/config.json", "r", encoding="utf8"))
-	user_config = f"{base_dir}/config_user.json"
+	cfg_dict = json.load(open(f"{base_dir}/lib_unprompted/config.json", "r", encoding="utf8"))
+	user_config = f"{base_dir}/lib_unprompted/config_user.json"
 	if (os.path.isfile(user_config)):
 		import lib_unprompted.flatdict as flatdict
 		flat_user_cfg = flatdict.FlatDict(json.load(open(user_config, "r", encoding="utf8")))

@@ -345,7 +345,7 @@ That said, we're still ironing out the methodology for underscores - at the mome
 
 <details><summary>The config file</summary>
 
-Various aspects of Unprompted's behavior are controlled through `unprompted/config.json`.
+Various aspects of Unprompted's behavior are controlled through `unprompted/lib_unprompted/config.json`.
 
 If you wish to override the default settings, you should make another file at the same location called `config_user.json`. Modifications to the original config file will **not** be preserved between updates.
 

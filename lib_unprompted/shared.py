@@ -47,6 +47,8 @@ class Unprompted:
 		all_shortcodes = glob.glob(self.base_dir + self.Config.base_dir + "/" + self.Config.subdirectories.shortcodes + "/**/*.py", recursive=True)
 		for file in all_shortcodes:
 			shortcode_name = os.path.basename(file).split(".")[0]
+			if shortcode_name == "__init__":
+				continue
 
 			# Import shortcode as module
 			spec = importlib.util.spec_from_file_location(shortcode_name, file)

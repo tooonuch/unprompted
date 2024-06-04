@@ -10,6 +10,8 @@ Unprompted is a **powerful templating language** and **Swiss Army knife** for th
 
 Built around `[shortcodes]`, Unprompted is uniquely designed for **maximum readibility with natural language.** This makes it **easy to learn and use**, even for those with no prior programming experience.
 
+Now also available as a [ComfyUI node](https://github.com/ThereforeGames/ComfyUI-Unprompted).
+
 ## 📦 Features
 
 - [x] Free

@@ -9,8 +9,7 @@ setup(
     package_dir={'unprompted': '.'},
     packages=['unprompted.lib_unprompted', 'unprompted.shortcodes', 'unprompted.templates'],
     package_data={
-        'unprompted': ['config.json'],
-        'unprompted.shortcodes': ['basic/*.txt', 'stable_diffusion/*.txt'],
+        'unprompted': ['*.json'],
         'unprompted.templates': ['common/*.txt']
     },
 )

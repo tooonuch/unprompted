@@ -8,8 +8,6 @@ setup(
     version="11.0.2",
     packages=find_packages(),
     package_data={
-        '': ['config.json'],
-        'shortcodes': ['*'],
-        'lib_unprompted': ['*'],
+        'unprompted': ['config.json', 'shortcodes/*', 'lib_unprompted/*'],
     },
 )

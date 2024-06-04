@@ -1,13 +1,13 @@
 import json
 from types import SimpleNamespace
-import lib_unprompted.shortcodes as shortcodes
-from lib_unprompted.simpleeval import simple_eval
+from . import shortcodes
+from .simpleeval import simple_eval
 import os
 import glob
 import sys
 import time
 import logging
-from lib_unprompted import helpers
+from . import helpers
 
 VERSION = "11.0.3"
 

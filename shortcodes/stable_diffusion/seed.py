@@ -12,9 +12,12 @@ class Shortcode():
 			new_seed = self.Unprompted.main_p.seed
 
 		if new_seed == -1:
-			from modules.processing import fix_seed
-			fix_seed(self.Unprompted.main_p)
-			new_seed = self.Unprompted.main_p.seed
+			try:
+				from modules.processing import fix_seed
+				fix_seed(self.Unprompted.main_p)
+				new_seed = self.Unprompted.main_p.seed
+			except:
+				new_seed = random.randint(0, 2**32 - 1)
 
 		random.seed(new_seed)
 		self.Unprompted.shortcode_user_vars["seed"] = new_seed

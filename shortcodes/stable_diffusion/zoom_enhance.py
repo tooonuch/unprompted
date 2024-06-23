@@ -9,6 +9,7 @@ def process_images_inner_(this_p):
 
 
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		import lib_unprompted.helpers as helpers
 		self.Unprompted = Unprompted
@@ -218,7 +219,7 @@ class Shortcode():
 		if "mask_method" in kwargs:
 			set_kwargs["method"] = self.Unprompted.parse_alt_tags(kwargs["mask_method"], context)
 
-		set_kwargs["txt2mask_init_image"] = image_pil
+		set_kwargs["input"] = image_pil
 		mask_image = self.Unprompted.shortcode_objects["txt2mask"].run_block(set_pargs, set_kwargs, None, target_mask)
 
 		if debug:

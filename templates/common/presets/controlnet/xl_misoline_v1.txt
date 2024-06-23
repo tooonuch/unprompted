@@ -1,0 +1,3 @@
+[sets 
+ cn_0_enabled=1 cn_0_pixel_perfect=1 cn_0_module=softedge_anyline cn_0_model=mistoLine_softedge_sdxl_fp16 cn_0_weight=0.5 cn_0_guidance_end=1.0 cn_0_control_mode=2
+ ]

@@ -1,8 +1,18 @@
 A port of [the script](https://github.com/ThereforeGames/txt2mask) by the same name, `[txt2mask]` allows you to create a region for inpainting based only on the text content (as opposed to the brush tool.) This shortcode only works in the img2img tab of the A1111 WebUI.
 
-Supports the `method` argument which determines the technology to use for masking. Defaults to `clipseg`. Can be changed to `fastsam` or `clip_surgery`, both of which utilize [Segment Anything](https://segment-anything.com/) instead. Although SAM technology is newer, my testing has shown that `clipseg` is still the most accurate method by far.
+Supports the `method` argument which determines the technology to use for masking:
 
-The `tris` method is also supported. Again, the tech is newer but `clipseg` continues to outperform.
+- `clipseg` ([source](https://github.com/timojl/clipseg)): The default method. It is able to select even small objects with relatively good precision. However, it does not support instance-based masking. Meaning if you try to mask "left dog" in an image with two dogs, it will mask both dogs.
+- `panoptic_sam` (source): A powerful method that combines multiple technologies to yield high precision and instance-based masking. However, it requires more VRAM than `clipseg` and sometimes fails to select small objects correctly. For example, attempting to mask a `shirt` may result in the selection of the entire person.
+- `tris` (source): Utilizes [Segment Anything](https://segment-anything.com/) technology.
+- `fastsam` (source): Utilizes [Segment Anything](https://segment-anything.com/) technology.
+- `clip_surgery` (source): Utilizes [Segment Anything](https://segment-anything.com/) technology.
+
+For methods that support instance-based masking (currently just `panoptic_sam`), the following additional kwargs are available:
+
+- `mask_sort_method`: A string that determines sort order for selected masks. Options include `left-to-right`, `top-to-bottom`, `in-to-out`, `big-to-small` and `random`. Defaults to `left-to-right`.
+- `reverse_mask_sort`: A boolean that reverses the sort order, e.g. right-to-left instead of left-to-right. Defaults to false.
+- `mask_index`: An integer that selects a specific mask from the sorted list. Defaults to 0, which selects the first mask.
 
 Supports the `mode` argument which determines how the text mask will behave alongside a brush mask:
 - `add` will overlay the two masks. This is the default value.

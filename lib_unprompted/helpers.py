@@ -32,10 +32,14 @@ def sigmoid(x):
 
 def is_equal(var_a, var_b):
 	"""Checks if two variables equal each other, taking care to account for datatypes."""
-	if (is_float(var_a)): var_a = float(var_a)
-	if (is_float(var_b)): var_b = float(var_b)
-	if (str(var_a) == str(var_b)): return True
-	else: return False
+	if (is_float(var_a)):
+		var_a = float(var_a)
+	if (is_float(var_b)):
+		var_b = float(var_b)
+	if (str(var_a) == str(var_b)):
+		return True
+	else:
+		return False
 
 
 def is_not_equal(var_a, var_b):
@@ -63,20 +67,25 @@ def is_int(value):
 
 def ensure(var, datatype):
 	"""Ensures that a variable is a given datatype"""
-	if isinstance(var, datatype): return var
+	if isinstance(var, datatype):
+		return var
 	else:
-		if datatype == list: return [var]
+		if datatype == list:
+			return [var]
 		return datatype(var)
 
 
 def autocast(var):
 	"""Converts a variable between string, int, and float depending on how it's formatted"""
 	original_var = var
-	if original_var == "inf" or original_var == "-inf": return (original_var)
+	if original_var == "inf" or original_var == "-inf":
+		return (original_var)
 	elif (is_float(var)):
 		var = float(var)
-		if int(var) == var and "." not in str(original_var): var = int(var)
-	elif (is_int(var)): var = int(var)
+		if int(var) == var and "." not in str(original_var):
+			var = int(var)
+	elif (is_int(var)):
+		var = int(var)
 	return (var)
 
 
@@ -89,6 +98,55 @@ def cv2_to_pil(img):
 	import cv2
 	from PIL import Image
 	return Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+
+
+def tensor_to_pil(tensor):
+	import numpy as np
+	from PIL import Image
+
+	# Move the tensor to CPU if it's not already
+	tensor = tensor.cpu()
+
+	# Remove the batch dimension if it exists
+	if tensor.ndim == 4:
+		tensor = tensor[0]
+
+	# Convert the tensor to a numpy array
+	array = tensor.numpy()
+
+	# If the tensor is in the format (C, H, W), transpose it to (H, W, C)
+	# if array.shape[0] == 3:
+	# 	array = array.transpose(1, 2, 0)
+
+	# Convert the numpy array to an image
+	array = (array * 255).astype(np.uint8)
+	image = Image.fromarray(array)
+
+	return image
+
+
+def pil_to_tensor(image):
+	import numpy as np
+	from PIL import Image
+	import torch
+
+	# Convert the PIL image to a numpy array
+	array = np.array(image)
+
+	# Normalize the numpy array to the range [0, 1]
+	array = array.astype(np.float32) / 255.0
+
+	# If the array is in the format (H, W, C), transpose it to (C, H, W)
+	# if array.ndim == 3:
+	# 	array = array.transpose(2, 0, 1)
+
+	# Convert the numpy array to a tensor
+	tensor = torch.from_numpy(array)
+
+	# Add a batch dimension
+	tensor = tensor.unsqueeze(0)
+
+	return tensor
 
 
 def str_to_rgb(color_string):
@@ -247,6 +305,7 @@ def unsharp_mask(image, amount=1.0, kernel_size=(5, 5), sigma=1.0, threshold=0):
 # Many libraries expect to be fed options with argparse,
 # which is not so straightforward inside of an A1111 extension
 class AttrDict(dict):
+
 	def __init__(self, *args, **kwargs):
 		super(AttrDict, self).__init__(*args, **kwargs)
 		self.__dict__ = self

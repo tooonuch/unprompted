@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Returns various types of metadata about the image."
@@ -8,14 +9,10 @@ class Shortcode():
 		from PIL import Image
 		return_string = ""
 		delimiter = ","
-		image = self.Unprompted.parse_alt_tags(kwargs["file"], context) if "file" in kwargs else self.Unprompted.current_image()
 
-		if isinstance(image, str):
-			try:
-				image = Image.open(image)
-			except:
-				self.log.error(f"Could not open image {image}")
-				return ""
+		image = self.Unprompted.parse_image_kwarg("file")
+		if not image:
+			return ""
 
 		if "width" in pargs:
 			return_string += str(image.width) + delimiter
@@ -27,7 +24,7 @@ class Shortcode():
 			from pathlib import Path
 			return_string += Path(image.filename).stem + delimiter
 		if "filetype" in pargs:
-			return_string += image.format + delimiter
+			return_string += (image.format or "None") + delimiter
 		if "filesize" in pargs:
 			import sys
 			return_string += str(sys.getsizeof(image.tobytes())) + delimiter

@@ -28,7 +28,7 @@ Now also available as a [ComfyUI node](https://github.com/ThereforeGames/ComfyUI
 
 ## 🔧 Installation
 
-We provide two methods of installation:
+We provide three methods of installation:
 
 <details><summary>How to install directly... (click to expand)</summary>
 
@@ -45,6 +45,13 @@ We provide two methods of installation:
 2. Visit the **Available** subtab.
 3. Uncheck the "ads" filter and press the **Load from** button.
 4. Scroll down to **Unprompted** and press the **Install** button. (Or use CTRL+F for convenience)
+
+</details>
+
+<details><summary>(NEW) How to install via pip for standalone use... (click to expand)</summary>
+
+1. In your terminal, run `pip install unprompted@git+https://github.com/ThereforeGames/unprompted`
+2. Refer to [unprompted_dry.py](https://github.com/ThereforeGames/unprompted/blob/main/unprompted_dry.py) for details on implementing Unprompted in your own Python projects
 
 </details>
 

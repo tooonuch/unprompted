@@ -9,7 +9,7 @@ import time
 import logging
 from . import helpers
 
-VERSION = "11.0.3"
+VERSION = "11.1.0"
 
 
 def parse_config(base_dir="."):
@@ -29,6 +29,7 @@ def parse_config(base_dir="."):
 
 
 class Unprompted:
+
 	def load_shortcodes(self):
 		start_time = time.time()
 		self.log.info("Initializing Unprompted shortcode parser...")
@@ -126,6 +127,7 @@ class Unprompted:
 		self.cfg_dict, self.Config = parse_config(base_dir)
 
 		class LogFormatter(logging.Formatter):
+
 			def __init__(self, format_str, config):
 				super().__init__(format_str)
 				self.Config = config
@@ -133,6 +135,7 @@ class Unprompted:
 			if self.Config.logging.use_colors:
 
 				def format(self, record):
+
 					def set_col_width(width=8, col_string="", new_string="", increment=None):
 						if self.Config.logging.improve_alignment:
 							if not new_string:
@@ -384,12 +387,22 @@ class Unprompted:
 			return (string)
 
 	def parse_image_kwarg(self, kwarg):
+		try:
+			import torch
+		except:
+			self.log.warning("Torch is not installed - the image kwarg may not work.")
+			pass
 		self.log.debug(f"Processing image kwarg: {kwarg}")
 
 		if kwarg in self.kwargs:
-			image_string = self.parse_arg(kwarg, "")
-			self.log.debug(f"Found image string {kwarg} in kwargs {self.kwargs}: {image_string}")
-			image = helpers.str_to_pil(image_string)
+			# Check if we supplied a tensor array (for ComfyUI support)
+			if self.kwargs[kwarg] in self.shortcode_user_vars and isinstance(self.shortcode_user_vars[self.kwargs[kwarg]], torch.Tensor):
+				self.log.debug(f"Found tensor array {kwarg} in kwargs {self.kwargs}: {self.kwargs[kwarg]}")
+				image = helpers.tensor_to_pil(self.shortcode_user_vars[self.kwargs[kwarg]])
+			else:
+				image_string = self.parse_arg(kwarg, "")
+				self.log.debug(f"Found image string {kwarg} in kwargs {self.kwargs}: {image_string}")
+				image = helpers.str_to_pil(image_string)
 		else:
 			self.log.debug(f"Could not find image string {kwarg} in kwargs {self.kwargs}. Using current image...")
 			image = self.current_image()
@@ -603,6 +616,8 @@ class Unprompted:
 				architecture = "sd2"
 			elif model.is_sd1:
 				architecture = "sd1"
+			elif model.is_sd3:
+				architecture = "sd3"
 			else:
 				architecture = "none"
 

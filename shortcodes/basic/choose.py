@@ -2,10 +2,10 @@ import random, copy
 
 
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Returns one of multiple options, delimited by newline or vertical pipe"
-		# self.sanitize_original = copy.copy(self.Unprompted.Config.syntax.sanitize_after)
 
 	def preprocess_block(self, pargs, kwargs, context):
 		return True
@@ -42,9 +42,11 @@ class Shortcode():
 					if checking_weight:
 						this_weight = helpers.autocast(part)
 
+						# If the weight is a string, we'll assume it has a weight of 1
 						if (isinstance(this_weight, str)):
 							this_weight = 1
 							checking_weight = False
+						# If the weight is a float, we'll use it as a probability
 						elif isinstance(this_weight, float):
 							probability = (this_weight % 1)
 							this_weight = int(this_weight)
@@ -74,7 +76,9 @@ class Shortcode():
 				final_string += self.Unprompted.process_string(self.Unprompted.sanitize_pre(parts[part_index], self.Unprompted.Config.syntax.sanitize_block, True), context, False)
 
 				if (times > 1 and x != times - 1):
-					del parts[part_index]  # Prevent the same choice from being made again
+					# Prevent the same choice from being made again
+					if "_allow_dupe" not in pargs:
+						del parts[part_index]
 					final_string += _sep
 		except Exception as e:
 			self.log.exception(f"Exception while parsing the list of choices. The partially assembled final string was: {final_string}")

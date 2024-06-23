@@ -3,7 +3,46 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>11.0.3 - 4 June 2024</summary>
+<details open><summary>11.1.0 - 23 June 2024</summary>
+
+### Added
+- `[txt2mask]`: New method `panoptic_sam` ([source](https://github.com/segments-ai/panoptic-segment-anything)) for instance-based masking - really good results!
+- `[txt2mask]`: Now supports `mask_sort_method`, `mask_index` and `reverse_mask_sort` kwargs for use with the `panoptic_sam` method
+- `[txt2mask]`: Compatibility with ComfyUI (dependencies must be installed manually, however)
+- `[txt2mask]`: Now supports `mask_var` kwarg to return the mask as a variable, potentially useful in ComfyUI
+- `[choose]`: Now supports the `_allow_dupe` parg to allow choosing the same item more than once
+- `[image_edit]`: Compatibility with ComfyUI
+- `[image_edit]`: Now supports `add_noise` kwarg to improve photorealism
+- `[image_edit]`: Now supports `brightness` kwarg via PIL ImageEnhance
+- `[image_edit]`: Now supports `contrast` kwarg via PIL ImageEnhance
+- `[image_edit]`: Now supports `sharpness` kwarg via PIL ImageEnhance
+- `[image_edit]`: Now supports `blur` kwarg via PIL ImageFilter
+- `[image_edit]`: Now supports `intensity` kwarg via PIL ImageEnhance
+- `[image_edit]`: Now supports `hue`, `saturation`, and `value` kwargs to adjust values in that color space
+- `[image_edit]`: Now supports `red`, `green`, and `blue` kwargs to adjust values in that color space
+- `[image_edit]`: Now supports the `shift_relative` parg to make relative color space adjustments
+- `[image_edit]`: Now supports the `rotate` kwarg
+- `[image_edit]`: Now supports the `flip_horizontal` and `flip_vertical` pargs
+- `[image_edit]`: Now supports the `colorize` kwarg
+- `[image_info]`: Now utilizes the `parse_image_kwarg()` method
+- Magic Spice v0.2.0
+- Bodysnatcher v2.0.1
+- New ControlNet preset `xl_misoline_v1`: A versatile ControlNet model for SDXL (more creative than `xl_quickshot` but less faithful to original image)
+- Updated img2img preset `general_v3`: Optimized for `DPM++ 2M` sampler
+- Updated Magic Spice preset `pony_photoreal_spice_v2`
+- The `parse_image_kwarg()` method can now take a Torch tensor variable for ComfyUI support
+- The `sd_base` variable now supports `sd3`
+- Minor improvements to `unprompted_dry.py` example
+
+### Changed
+- `[txt2mask]`: The `txt2mask_input_image` kwarg has been renamed to `input`
+
+### Fixed
+- `[image_info]`: Fixed crash when `filetype` cannot be determined
+
+</details>
+
+<details><summary>11.0.3 - 4 June 2024</summary>
 
 ### Changed
 - Moved `config.json` to `lib_unprompted/config.json` as a workaround for inexplicable issues with setuptools for pip installation

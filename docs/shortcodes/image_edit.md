@@ -42,12 +42,126 @@ I recommend using `copy` when also using `return`.
 
 ## Image operation arguments
 
+### add_noise
+
+Adds noise to the `input` image. The value of this kwarg indicates the strength of the noise.
+
+- `noise_monochromatic`: parg that controls whether the noise is monochromatic or not. Defaults to true.
+- `noise_type`: string kwarg that determines the type of noise to add. Options include `gaussian`, `salt_pepper`, `poisson`, and `speckle`. Defaults to `gaussian`.
+- `max_noise_variance`: integer kwarg that determines the potential variation in the noise. Defaults to 500.
+
+```
+[image_edit add_noise=10]
+```
+
 ### autotone
 
 Adjusts the black point of the `input` image for enhanced contrast. The algorithm produces results that are virtually identical to the **Image > Auto Tone** feature in Photoshop.
 
 ```
 [image_edit autotone]
+```
+
+### brightness
+
+Adjusts the brightness of the `input` image. The value of this kwarg indicates the strength of the adjustment. Powered by the PIL ImageEnhance module.
+
+A value of `1` will not change the image, while `0` will make the image completely black.
+
+```
+[image_edit brightness=0.5]
+```
+
+### contrast
+
+Adjusts the contrast of the `input` image. The value of this kwarg indicates the strength of the adjustment. Powered by the PIL ImageEnhance module.
+
+A value of `1` will not change the image, while `0` will make the image completely gray.
+
+```
+[image_edit contrast=0.5]
+```
+
+### sharpness
+
+Adjusts the sharpness of the `input` image. The value of this kwarg indicates the strength of the adjustment. Powered by the PIL ImageEnhance module.
+
+```
+[image_edit sharpness=3]
+```
+
+### blur
+
+Blurs the `input` image. The value of this kwarg indicates the pixel radius of the blur. Powered by the PIL ImageFilter module.
+
+- `blur_type`: kwarg that determines the type of blur to apply. Options include `gaussian`, `box`, and `unsharpen`. Defaults to `gaussian`.
+
+```
+[image_edit blur=5]
+```
+
+### intensity
+
+Adjusts the intensity of the `input` image. The value of this kwarg indicates the strength of the adjustment. Powered by the PIL ImageEnhance module.
+
+Note that intensity and saturation are similar but not identical.
+
+```
+[image_edit intensity=20]
+```
+
+### hue, saturation, value
+
+Modify the `input` image in the HSV color space.
+
+- `shift_relative`: parg that determines whether the values are modified relative to the original image, or set absolutely. Defaults to false.
+
+```
+[image_edit hue=20 saturation=20 value=20]
+```
+
+### red, green, blue
+
+Modify the `input` image in the RGB color space.
+
+- `shift_relative`: parg that determines whether the values are modified relative to the original image, or set absolutely. Defaults to false.
+
+```
+[image_edit red=20 green=20 blue=20]
+```
+
+### rotate
+
+Rotates the `input` image by the specified number of degrees.
+
+```
+[image_edit rotate=90]
+```
+
+### flip_vertical
+
+Flips the `input` image vertically.
+
+```
+[image_edit flip_vertical]
+```
+
+### flip_horizontal
+
+Flips the `input` image horizontally.
+
+```
+[image_edit flip_horizontal]
+```
+
+### colorize
+
+Colorizes the `input` image with the specified color.
+
+The value of this kwarg can either be a hex color code (e.g. `#FF0000`) or a tuple of RGB values (e.g. `255, 0, 0`).
+
+```
+[image_edit colorize="#FF0000"]
 ```
 
 ### color_match

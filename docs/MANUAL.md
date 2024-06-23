@@ -259,6 +259,7 @@ You can set this variable to the name of a Stable Diffusion checkpoint, and Unpr
 This variable contains the base type of the currently-loaded checkpoint. The possible values at the time of writing are as follows:
 
 - sdxl
+- sd3
 - sd2
 - sd1
 - none

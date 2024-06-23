@@ -1,4 +1,4 @@
-[set magic_fluff]BREAK high detail RAW photo, colorful, best quality, very aesthetic, 4k resolution, professional photography, extremely detailed, film grain[/set]
+[set magic_fluff_affix]BREAK high detail RAW photo, colorful, best quality, very aesthetic, 4k resolution, professional photography, extremely detailed, film grain[/set]
 [set magic_gpt_model]roborovski/superprompt-v1[/set]
 [set magic_gpt_tokenizer]google/flan-t5-small[/set]
 [set magic_gpt_instruction]Expand the following prompt to add more detail:[/set]
@@ -23,4 +23,7 @@
 			[set negative_prompt _append]worst quality[/set]
 		[/else]
 	[/else]
+[/set]
+[set magic_postprocessing _defer]
+	[image_edit autotone add_noise=5]
 [/set]

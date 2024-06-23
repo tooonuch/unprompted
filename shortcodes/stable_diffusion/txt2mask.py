@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.image_mask = None
@@ -12,9 +13,11 @@ class Shortcode():
 		except:
 			pass
 		self.cached_model = -1
+		self.cached_model_b = -1
 		self.cached_transform = -1
 		self.cached_model_method = ""
 		self.cached_predictor = -1
+		self.cached_preprocess = -1
 		self.copied_images = []
 
 	def run_block(self, pargs, kwargs, context, content):
@@ -27,12 +30,19 @@ class Shortcode():
 		import cv2
 		import numpy
 		import lib_unprompted.helpers as helpers
-		from modules.images import flatten
-		from modules.shared import opts
+		try:
+			from modules.images import flatten
+			from modules.shared import opts
+		except:
+			pass
 		from torchvision.transforms.functional import pil_to_tensor, to_pil_image
 
-		if "txt2mask_init_image" in kwargs:
-			self.init_image = kwargs["txt2mask_init_image"].copy()
+		if "input" in kwargs:
+			self.init_image = self.Unprompted.shortcode_user_vars[kwargs["input"]]
+			if isinstance(self.init_image, torch.Tensor):
+				self.init_image = helpers.tensor_to_pil(self.init_image)
+			else:
+				self.init_image = self.init_image.copy()
 		elif "init_images" not in self.Unprompted.shortcode_user_vars:
 			self.log.error("No init_images found...")
 			return
@@ -40,6 +50,9 @@ class Shortcode():
 			self.init_image = self.Unprompted.shortcode_user_vars["init_images"][0].copy()
 
 		method = self.Unprompted.parse_arg("method", "clipseg")
+		mask_sort_method = self.Unprompted.parse_arg("mask_sort_method", "random")
+		reverse_mask_sort = self.Unprompted.parse_arg("reverse_mask_sort", False)
+		mask_index = self.Unprompted.parse_arg("mask_index", 0)
 
 		if method == "clipseg":
 			mask_width = 512
@@ -121,7 +134,7 @@ class Shortcode():
 			if len(neg_parsed) < 1:
 				negative_prompts = None
 			else:
-				negative_prompts = neg_parsed # neg_parsed.split(self.Unprompted.Config.syntax.delimiter)
+				negative_prompts = neg_parsed
 				negative_prompt_parts = len(negative_prompts)
 		else:
 			negative_prompts = None
@@ -152,11 +165,11 @@ class Shortcode():
 					mask_np = mask.detach().cpu().numpy()
 					# Convert the mask to an image
 					img = (mask_np * 255).astype(numpy.uint8)
+				# Catch any other types of masks
+				elif not isinstance(mask, numpy.ndarray):
+					img = numpy.array(mask)
 				else:
 					img = mask
-
-				# img = Image.fromarray(mask_np)
-				# img = img.resize((mask_width, mask_height))
 
 				if padding_dilation_kernel is not None:
 					if (mask_padding > 0):
@@ -174,9 +187,6 @@ class Shortcode():
 					gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 				else:
 					gray_image = img
-				# Check if we need to convert the image to 8-bit integers:
-				# if gray_image.dtype != numpy.uint8:
-				#	gray_image = (gray_image * 255).astype(numpy.uint8)
 
 				if "debug" in pargs:
 					Image.fromarray(gray_image).save("mask_gray_test.png")
@@ -194,12 +204,451 @@ class Shortcode():
 			return (final_img)
 
 		def get_mask():
+			import torch
+
 			preds = []
 			negative_preds = []
-			image_pil = flatten(self.init_image, opts.img2img_background_color)
+			if self.Unprompted.webui != "comfy":
+				image_pil = flatten(self.init_image, opts.img2img_background_color)
 
-			if method == "peekaboo":
-				pass
+			if method == "panoptic_sam":
+				if not self.Unprompted.shortcode_install_requirements("panoptic_sam", ["timm", "addict", "supervision", "pycocotools"]):
+					return False
+
+				try:
+					import random
+					import numpy as np
+					import matplotlib.pyplot as plt
+					import torch
+					from torch import nn
+					import torch.nn.functional as F
+					from scipy import ndimage
+					from PIL import Image
+					from huggingface_hub import hf_hub_download
+					# from segments import SegmentsClient
+					# from segments.export import colorize
+					# from segments.utils import bitmap2file
+					# from getpass import getpass
+
+					# Grounding DINO
+					import sys
+					# Fix imports in GroundingDINO library
+					# print(os.path.join(self.Unprompted.base_dir, "lib_unprompted/GroundingDINO"))
+					sys.path.append(os.path.join(self.Unprompted.base_dir, "lib_unprompted/GroundingDINO"))
+					import lib_unprompted.GroundingDINO.groundingdino.datasets.transforms as T
+					from lib_unprompted.GroundingDINO.groundingdino.models import build_model
+					from lib_unprompted.GroundingDINO.groundingdino.util import box_ops
+					from lib_unprompted.GroundingDINO.groundingdino.util.slconfig import SLConfig
+					from lib_unprompted.GroundingDINO.groundingdino.util.utils import clean_state_dict
+					from lib_unprompted.GroundingDINO.groundingdino.util.inference import annotate, predict
+
+					# segment anything
+					from segment_anything import build_sam, SamPredictor
+
+					# CLIPSeg
+					from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
+				except:
+					self.log.error("Failed to import required libraries for `panoptic_sam.` Please open an issue on GitHub if this persists and try switching to `clipseg` in the meantime.")
+					return False
+
+				# if device != "cpu":
+				# try:
+				# 	from lib_unprompted.GroundingDINO.groundingdino import _C
+				# except:
+				# 	self.log.warning("Failed to load custom C++ ops. Running on CPU mode Only in groundingdino!")
+
+				if self.cached_model == -1 or self.cached_model_method != method:
+					# Use this command for evaluate the Grounding DINO model
+					# Or you can download the model by yourself
+					ckpt_repo_id = "ShilongLiu/GroundingDINO"
+					ckpt_filename = "groundingdino_swinb_cogcoor.pth"
+					ckpt_config_filename = "GroundingDINO_SwinB.cfg.py"
+
+					def load_model_hf(repo_id, filename, ckpt_config_filename, device):
+						cache_config_file = hf_hub_download(repo_id=repo_id, filename=ckpt_config_filename, cache_dir=f"{self.Unprompted.base_dir}/models/groundingdino")
+
+						args = SLConfig.fromfile(cache_config_file)
+						model = build_model(args)
+						args.device = device
+
+						cache_file = hf_hub_download(repo_id=repo_id, filename=filename, cache_dir=f"{self.Unprompted.base_dir}/models/groundingdino")
+						checkpoint = torch.load(cache_file, map_location="cpu")
+						log = model.load_state_dict(clean_state_dict(checkpoint["model"]), strict=False)
+						self.log.info("Model loaded from {} \n => {}".format(cache_file, log))
+						_ = model.eval()
+						model.to(device)
+						return model
+
+					groundingdino_model = load_model_hf(ckpt_repo_id, ckpt_filename, ckpt_config_filename, device)
+					if device == "cuda":
+						groundingdino_model = groundingdino_model.to('cuda:0')
+					self.cached_model = groundingdino_model
+
+					# Download SAM
+					sam_model_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}/segment_anything"
+					os.makedirs(sam_model_dir, exist_ok=True)
+					sam_checkpoint = "sam_vit_h_4b8939.pth"
+					sam_file = f"{sam_model_dir}/{sam_checkpoint}"
+					# Download model weights if we don't have them yet
+					if not os.path.exists(sam_file):
+						self.log.info("Downloading SAM model weights...")
+						helpers.download_file(sam_file, f"https://dl.fbaipublicfiles.com/segment_anything/{sam_filename}")
+
+					sam = build_sam(checkpoint=sam_file)
+					sam.to(device=device)
+					sam_predictor = SamPredictor(sam)
+					self.cached_predictor = sam_predictor
+
+					# Download CLIPSEG
+
+					clipseg_processor = CLIPSegProcessor.from_pretrained("CIDAS/clipseg-rd64-refined", cache_dir=f"{self.Unprompted.base_dir}/models/clipseg")
+					clipseg_model = CLIPSegForImageSegmentation.from_pretrained("CIDAS/clipseg-rd64-refined", cache_dir=f"{self.Unprompted.base_dir}/models/clipseg")
+					clipseg_model.to(device)
+					self.cached_model_b = clipseg_model
+					self.cached_preprocess = clipseg_processor
+
+					self.cached_model_method = method
+				else:
+					self.log.info("Using cached panoptic_sam models...")
+					groundingdino_model = self.cached_model
+					sam_predictor = self.cached_predictor
+					clipseg_processor = self.cached_preprocess
+					clipseg_model = self.cached_model_b
+
+				# Helper methods for panoptic_sam
+				def load_image_for_dino(image):
+					transform = T.Compose([
+					    T.RandomResize([800], max_size=1333),
+					    T.ToTensor(),
+					    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+					])
+					dino_image, _ = transform(image, None)
+					return dino_image
+
+				def dino_detection(
+				    model,
+				    image,
+				    image_array,
+				    category_names,
+				    category_name_to_id,
+				    box_threshold,
+				    text_threshold,
+				    device,
+				    visualize=False,
+				):
+					detection_prompt = " . ".join(category_names)
+					dino_image = load_image_for_dino(image)
+					dino_image = dino_image.to(device)
+					with torch.no_grad():
+						boxes, logits, phrases = predict(
+						    model=model,
+						    image=dino_image,
+						    caption=detection_prompt,
+						    box_threshold=box_threshold,
+						    text_threshold=text_threshold,
+						    device=device,
+						    # remove_combined=True,
+						)
+					phrases = [phrase for phrase in phrases if phrase]
+					category_ids = [category_name_to_id[phrase] for phrase in phrases]
+
+					if visualize:
+						annotated_frame = annotate(image_source=image_array, boxes=boxes, logits=logits, phrases=phrases)
+						annotated_frame = annotated_frame[..., ::-1]  # BGR to RGB
+						visualization = Image.fromarray(annotated_frame)
+						return boxes, category_ids, visualization
+					else:
+						return boxes, category_ids, phrases
+
+				def sam_masks_from_dino_boxes(predictor, image_array, boxes, device):
+					# box: normalized box xywh -> unnormalized xyxy
+					H, W, _ = image_array.shape
+					boxes_xyxy = box_ops.box_cxcywh_to_xyxy(boxes) * torch.Tensor([W, H, W, H])
+					transformed_boxes = predictor.transform.apply_boxes_torch(boxes_xyxy, image_array.shape[:2]).to(device)
+					thing_masks, _, _ = predictor.predict_torch(
+					    point_coords=None,
+					    point_labels=None,
+					    boxes=transformed_boxes,
+					    multimask_output=False,
+					)
+					return thing_masks
+
+				def preds_to_semantic_inds(preds, threshold):
+					flat_preds = preds.reshape((preds.shape[0], -1))
+					# Initialize a dummy "unlabeled" mask with the threshold
+					flat_preds_with_treshold = torch.full((preds.shape[0] + 1, flat_preds.shape[-1]), threshold)
+					flat_preds_with_treshold[1:preds.shape[0] + 1, :] = flat_preds
+
+					# Get the top mask index for each pixel
+					semantic_inds = torch.topk(flat_preds_with_treshold, 1, dim=0).indices.reshape((preds.shape[-2], preds.shape[-1]))
+
+					return semantic_inds
+
+				def clipseg_segmentation(processor, model, image, category_names, background_threshold, device):
+					inputs = processor(
+					    text=category_names,
+					    images=[image] * len(category_names),
+					    padding="max_length",
+					    return_tensors="pt",
+					).to(device)
+					with torch.no_grad():
+						outputs = model(**inputs)
+					logits = outputs.logits
+					if len(logits.shape) == 2:
+						logits = logits.unsqueeze(0)
+					# resize the outputs
+					upscaled_logits = nn.functional.interpolate(
+					    logits.unsqueeze(1),
+					    size=(image.size[1], image.size[0]),
+					    mode="bilinear",
+					)
+					preds = torch.sigmoid(upscaled_logits.squeeze(dim=1))
+					semantic_inds = preds_to_semantic_inds(preds, background_threshold)
+					return preds, semantic_inds
+
+				def semantic_inds_to_shrunken_bool_masks(semantic_inds, shrink_kernel_size, num_categories):
+					shrink_kernel = np.ones((shrink_kernel_size, shrink_kernel_size))
+
+					bool_masks = torch.zeros((num_categories, *semantic_inds.shape), dtype=bool)
+					for category in range(num_categories):
+						binary_mask = semantic_inds == category
+						shrunken_binary_mask_array = (ndimage.binary_erosion(binary_mask.numpy(), structure=shrink_kernel) if shrink_kernel_size > 0 else binary_mask.numpy())
+						bool_masks[category] = torch.from_numpy(shrunken_binary_mask_array)
+
+					return bool_masks
+
+				def clip_and_shrink_preds(semantic_inds, preds, shrink_kernel_size, num_categories):
+					# convert semantic_inds to shrunken bool masks
+					bool_masks = semantic_inds_to_shrunken_bool_masks(semantic_inds, shrink_kernel_size, num_categories).to(preds.device)
+
+					sizes = [torch.sum(bool_masks[i].int()).item() for i in range(1, bool_masks.size(0))]
+					max_size = max(sizes)
+					relative_sizes = [size / max_size for size in sizes] if max_size > 0 else sizes
+
+					# use bool masks to clip preds
+					clipped_preds = torch.zeros_like(preds)
+					for i in range(1, bool_masks.size(0)):
+						float_mask = bool_masks[i].float()
+						clipped_preds[i - 1] = preds[i - 1] * float_mask
+
+					return clipped_preds, relative_sizes
+
+				def sample_points_based_on_preds(preds, N):
+					height, width = preds.shape
+					weights = preds.ravel()
+					indices = np.arange(height * width)
+
+					# Randomly sample N indices based on the weights
+					sampled_indices = random.choices(indices, weights=weights, k=N)
+
+					# Convert the sampled indices into (col, row) coordinates
+					sampled_points = [(index % width, index // width) for index in sampled_indices]
+
+					return sampled_points
+
+				def upsample_pred(pred, image_source):
+					pred = pred.unsqueeze(dim=0)
+					original_height = image_source.shape[0]
+					original_width = image_source.shape[1]
+
+					larger_dim = max(original_height, original_width)
+					aspect_ratio = original_height / original_width
+
+					# upsample the tensor to the larger dimension
+					upsampled_tensor = F.interpolate(pred, size=(larger_dim, larger_dim), mode="bilinear", align_corners=False)
+
+					# remove the padding (at the end) to get the original image resolution
+					if original_height > original_width:
+						target_width = int(upsampled_tensor.shape[3] * aspect_ratio)
+						upsampled_tensor = upsampled_tensor[:, :, :, :target_width]
+					else:
+						target_height = int(upsampled_tensor.shape[2] * aspect_ratio)
+						upsampled_tensor = upsampled_tensor[:, :, :target_height, :]
+					return upsampled_tensor.squeeze(dim=1)
+
+				def sam_mask_from_points(predictor, image_array, points):
+					points_array = np.array(points)
+					# we only sample positive points, so labels are all 1
+					points_labels = np.ones(len(points))
+					# we don't use predict_torch here cause it didn't seem to work...
+					masks, scores, logits = predictor.predict(
+					    point_coords=points_array,
+					    point_labels=points_labels,
+					)
+					# max over the 3 segmentation levels
+					total_pred = torch.max(torch.sigmoid(torch.tensor(logits)), dim=0)[0].unsqueeze(dim=0)
+					# logits are 256x256 -> upsample back to image shape
+					upsampled_pred = upsample_pred(total_pred, image_array)
+					return upsampled_pred
+
+				# main mask generation function for panoptic_sam
+				def generate_panoptic_mask(
+				        image,
+				        thing_category_names,
+				        stuff_category_names,
+				        category_name_to_id,
+				        dino_model,
+				        sam_predictor,
+				        clipseg_processor,
+				        clipseg_model,
+				        device,
+				        dino_box_threshold=0.3 * (mask_precision / 100),
+				        dino_text_threshold=0.25,
+				        segmentation_background_threshold=0.1,
+				        shrink_kernel_size=20,
+				        num_samples_factor=1000,
+				):
+					image = image.convert("RGB")
+					image_array = np.asarray(image)
+
+					# compute SAM image embedding
+					sam_predictor.set_image(image_array)
+
+					# detect boxes for "thing" categories using Grounding DINO
+					thing_category_ids = []
+					thing_masks = []
+					thing_boxes = []
+					if len(thing_category_names) > 0:
+						thing_boxes, thing_category_ids, _ = dino_detection(
+						    dino_model,
+						    image,
+						    image_array,
+						    thing_category_names,
+						    category_name_to_id,
+						    dino_box_threshold,
+						    dino_text_threshold,
+						    device,
+						)
+						if len(thing_boxes) > 0:
+							# get segmentation masks for the thing boxes
+							thing_masks = sam_masks_from_dino_boxes(sam_predictor, image_array, thing_boxes, device)
+
+					if len(stuff_category_names) > 0:
+						# get rough segmentation masks for "stuff" categories using CLIPSeg
+						clipseg_preds, clipseg_semantic_inds = clipseg_segmentation(
+						    clipseg_processor,
+						    clipseg_model,
+						    image,
+						    stuff_category_names,
+						    segmentation_background_threshold,
+						    device,
+						)
+						# remove things from stuff masks
+						clipseg_semantic_inds_without_things = clipseg_semantic_inds.clone()
+						if len(thing_boxes) > 0:
+							combined_things_mask = torch.any(thing_masks, dim=0)
+							clipseg_semantic_inds_without_things[combined_things_mask[0]] = 0
+						# clip CLIPSeg preds based on non-overlapping semantic segmentation inds (+ optionally shrink the mask of each category)
+						# also returns the relative size of each category
+						clipsed_clipped_preds, relative_sizes = clip_and_shrink_preds(
+						    clipseg_semantic_inds_without_things,
+						    clipseg_preds,
+						    shrink_kernel_size,
+						    len(stuff_category_names) + 1,
+						)
+						# get finer segmentation masks for the "stuff" categories using SAM
+						sam_preds = torch.zeros_like(clipsed_clipped_preds)
+						for i in range(clipsed_clipped_preds.shape[0]):
+							clipseg_pred = clipsed_clipped_preds[i]
+							# for each "stuff" category, sample points in the rough segmentation mask
+							num_samples = int(relative_sizes[i] * num_samples_factor)
+							if num_samples == 0:
+								continue
+							points = sample_points_based_on_preds(clipseg_pred.cpu().numpy(), num_samples)
+							if len(points) == 0:
+								continue
+							# use SAM to get mask for points
+							pred = sam_mask_from_points(sam_predictor, image_array, points)
+							sam_preds[i] = pred
+						sam_semantic_inds = preds_to_semantic_inds(sam_preds, segmentation_background_threshold)
+
+					# combine the thing inds and the stuff inds into panoptic inds
+					panoptic_inds = (sam_semantic_inds.clone() if len(stuff_category_names) > 0 else torch.zeros(image_array.shape[0], image_array.shape[1], dtype=torch.long))
+					ind = len(stuff_category_names) + 1
+					for thing_mask in thing_masks:
+						# overlay thing mask on panoptic inds
+						panoptic_inds[thing_mask.squeeze(dim=0)] = ind
+						ind += 1
+
+					return panoptic_inds, thing_category_ids
+
+				# Taken from the segments-ai library
+				from io import BytesIO
+				import numpy.typing as npt
+
+				def bitmap2file(
+				    bitmap: npt.NDArray[np.uint32],
+				    is_segmentation_bitmap: bool = True,
+				):
+					"""Convert a label bitmap to a file with the proper format.
+
+					Args:
+						bitmap: A :class:`numpy.ndarray` with :class:`numpy.uint32` dtype where each unique value represents an instance id.
+						is_segmentation_bitmap: If this is a segmentation bitmap. Defaults to :obj:`True`.
+
+					Returns:
+						A file object.
+
+					Raises:
+						:exc:`ValueError`: If the ``dtype`` is not :class:`np.uint32` or :class:`np.uint8`.
+						:exc:`ValueError`: If the bitmap is not a segmentation bitmap.
+					"""
+					bitmaps = []
+
+					# Convert bitmap to np.uint32, if it is not already
+					if bitmap.dtype == "uint32":
+						pass
+					elif bitmap.dtype == "uint8":
+						bitmap = np.uint32(bitmap)
+					else:
+						raise ValueError("Only `np.ndarrays` with `np.uint32` data type can be used.")
+
+					if is_segmentation_bitmap:
+						unique_ids = np.unique(bitmap)[1:]  # First index is a composite
+						for id in unique_ids:
+							mask = np.where(bitmap == id, 255, 0).astype('uint8')
+							mask_rgba = np.stack([mask] * 4, axis=-1)  # Create an RGBA image
+							mask_rgba[..., 3] = (mask > 0) * 255  # Set alpha channel
+							f = BytesIO()
+							Image.fromarray(mask_rgba).save(f, "PNG")
+							f.seek(0)
+							bitmaps.append(f)
+					else:
+						raise ValueError("Only segmentation bitmaps can be used.")
+
+					return bitmaps
+
+				def run_panoptic(words):
+					words = helpers.ensure(words, list)
+					these_preds = []
+					# thing_category_names = ["car", "person", "bus"]
+					stuff_category_names = []  # ["building", "road", "sky", "trees", "sidewalk"]
+					category_names = words + stuff_category_names
+					category_name_to_id = {category_name: i for i, category_name in enumerate(category_names)}
+					panoptic_inds, thing_category_ids = generate_panoptic_mask(
+					    image_pil,
+					    words,
+					    stuff_category_names,  #
+					    category_name_to_id,
+					    groundingdino_model,
+					    sam_predictor,
+					    clipseg_processor,
+					    clipseg_model,
+					    device,
+					)
+
+					panoptic_inds_array = panoptic_inds.numpy().astype(np.uint32)
+					bitmap_files = bitmap2file(panoptic_inds_array, is_segmentation_bitmap=True)
+					for i, bitmap_file in enumerate(bitmap_files):
+						mask = Image.open(bitmap_file)
+						these_preds.append(mask)
+
+					return these_preds
+
+				preds = run_panoptic(prompts)
+				if negative_prompts:
+					negative_preds = run_panoptic(negative_prompts)
+
 			elif method == "fastsam":
 				self.Unprompted.shortcode_install_requirements(f"fastSAM", ["ultralytics"])
 				from ultralytics import YOLO
@@ -590,6 +1039,7 @@ class Shortcode():
 			# CLIPseg method
 			else:
 				import torchvision.transforms as transforms
+				import torch
 				from lib_unprompted.stable_diffusion.clipseg.models.clipseg import CLIPDensePredT
 
 				model_dir = f"{self.Unprompted.base_dir}/{self.Unprompted.Config.subdirectories.models}/clipseg"
@@ -634,7 +1084,10 @@ class Shortcode():
 				with torch.no_grad():
 					if "image_prompt" in kwargs:
 						from PIL import Image
-						img_mask = flatten(Image.open(kwargs["image_prompt"]), opts.img2img_background_color)
+						if self.Unprompted.webui == "comfy":
+							img_mask = Image.open(kwargs["image_prompt"])
+						else:
+							img_mask = flatten(Image.open(kwargs["image_prompt"]), opts.img2img_background_color)
 						img_mask = transform(img_mask).unsqueeze(0)
 						preds = model(img.to(device=device), img_mask.to(device=device))[0].cpu()
 					else:
@@ -654,6 +1107,39 @@ class Shortcode():
 				final_img = None
 
 			# process masking
+			if method == "panoptic_sam":
+				import cv2
+				if len(preds) > 1:
+					# Convert all_masks images to cv2 format
+					all_masks = [numpy.array(mask) for mask in preds]
+					if mask_sort_method == "random":
+						import random
+						random.shuffle(all_masks)
+					elif mask_sort_method == "big-to-small":
+						all_masks = sorted(all_masks, key=lambda x: x.shape[0] * x.shape[1], reverse=True)
+					elif mask_sort_method == "left-to-right" or mask_sort_method == "top-to-bottom":
+						i = 0
+
+						# handle if we are sorting against the y-coordinate rather than the x-coordinate of the bounding box
+						if mask_sort_method == "top-to-bottom":
+							i = 1
+
+						# construct the list of bounding boxes and sort them from top to bottom
+						bounding_boxes = [cv2.boundingRect(cv2.convertScaleAbs(cv2.cvtColor(c, cv2.COLOR_BGR2GRAY))) for c in all_masks]
+						(all_masks, bounding_boxes) = zip(*sorted(zip(all_masks, bounding_boxes), key=lambda b: b[1][i]))
+					elif mask_sort_method == "in-to-out":
+						# Sort masks from the center of the image outwards
+						center = (mask_width // 2, mask_height // 2)
+						all_masks = sorted(all_masks, key=lambda x: abs(center[0] - x.shape[0] // 2) + abs(center[1] - x.shape[1] // 2))
+
+					if reverse_mask_sort:
+						all_masks = all_masks[::-1]
+
+					# For the first mask, replace the transparent background with a black background
+					preds = all_masks[min(mask_index, len(all_masks) - 1)]
+					preds = cv2.cvtColor(preds, cv2.COLOR_RGBA2RGB)
+					preds = [preds]
+
 			final_img = process_mask_parts(preds, "add", final_img, mask_precision, mask_padding, padding_dilation_kernel, smoothing_kernel)
 
 			# process negative masking
@@ -695,6 +1181,8 @@ class Shortcode():
 				self.Unprompted.shortcode_user_vars[kwargs["aspect_var"]] = aspect_ratio
 				if "save" in kwargs:
 					cropped.save(f"cropped_mask.png")
+			if "mask_var" in kwargs:
+				self.Unprompted.shortcode_user_vars[kwargs["mask_var"]] = final_img
 
 			# Inpaint sketch compatibility
 			if "sketch_color" in kwargs:
@@ -753,6 +1241,7 @@ class Shortcode():
 			if "unload_model" in pargs:
 				self.model = -1
 				self.cached_model = -1
+				self.cached_model_b = -1
 				self.cached_model_method = ""
 				self.cached_predictor = -1
 				self.cached_preprocess = -1
@@ -762,6 +1251,8 @@ class Shortcode():
 
 		# Set up processor parameters correctly
 		self.image_mask = get_mask()
+		if not self.image_mask:
+			return ""
 
 		if not mask_blur and ("mask_blur" in self.Unprompted.shortcode_user_vars and self.Unprompted.shortcode_user_vars["mask_blur"] > 0):
 			mask_blur = self.Unprompted.shortcode_user_vars["mask_blur"]
@@ -838,7 +1329,11 @@ class Shortcode():
 		o = []
 
 		with gr.Accordion("⚙️ General Settings", open=False):
-			o.append(gr.Radio(label="Masking tech method (clipseg is most accurate) 🡢 method", choices=["clipseg", "clip_surgery", "fastsam", "tris"], value="clipseg", interactive=True))
+			o.append(gr.Radio(label="Masking tech method (clipseg is most accurate) 🡢 method", choices=["panoptic_sam", "clipseg", "clip_surgery", "fastsam", "tris"], value="panoptic_sam", interactive=True))
+			with gr.Row():
+				o.append(gr.Dropdown(label="Mask sort method 🡢 mask_sort_method", choices=["random", "left-to-right", "top-to-bottom", "big-to-small", "in-to-out"], value="left-to-right", interactive=True))
+				o.append(gr.Checkbox(label="Reverse mask sort 🡢 reverse_mask_sort", interactive=True, value=False))
+				o.append(gr.Number(label="Mask index 🡢 mask_index", value=0, interactive=True))
 			o.append(gr.Radio(label="Mask blend mode 🡢 mode", choices=["add", "subtract", "discard"], value="add", interactive=True))
 			o.append(gr.Textbox(label="Mask color, enables Inpaint Sketch mode 🡢 sketch_color", max_lines=1, placeholder="e.g. tan or 127,127,127"))
 			o.append(gr.Number(label="Mask alpha, must be used in conjunction with mask color 🡢 sketch_alpha", value=0, interactive=True))
@@ -861,7 +1356,8 @@ class Shortcode():
 		with gr.Accordion("🖼️ Stamp", open=False):
 			o.append(gr.Textbox(label="Stamp file(s) 🡢 stamp", max_lines=1, placeholder="Looks for PNG file in unprompted/images/stamps OR absolute path"))
 			o.append(gr.Dropdown(label="Stamp method 🡢 stamp_method", choices=["stretch", "center"], value="stretch", interactive=True))
-			o.append(gr.Number(label="Stamp X 🡢 stamp_x", value=0, interactive=True))
-			o.append(gr.Number(label="Stamp Y 🡢 stamp_y", value=0, interactive=True))
+			with gr.Row():
+				o.append(gr.Number(label="Stamp X 🡢 stamp_x", value=0, interactive=True))
+				o.append(gr.Number(label="Stamp Y 🡢 stamp_y", value=0, interactive=True))
 
 		return o

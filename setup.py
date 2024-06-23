@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
     name='Unprompted',
-    version='11.0.3',
+    version='11.1.0',
     package_dir={'unprompted': '.'},
     packages=['unprompted.lib_unprompted', 'unprompted.shortcodes', 'unprompted.shortcodes.basic', 'unprompted.shortcodes.stable_diffusion', 'unprompted.templates'],
     package_data={

@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Applies color correction to a resulting image."
@@ -53,7 +54,7 @@ class Shortcode():
 			set_pargs = pargs
 			set_pargs.insert(0, "return_image")
 			set_pargs.append("not_img2img")
-			set_kwargs["txt2mask_init_image"] = starting_image
+			set_kwargs["input"] = starting_image
 			set_kwargs["precision"] = "150"
 			set_kwargs["padding"] = "0"
 			set_kwargs["method"] = "clipseg"

@@ -1,4 +1,20 @@
-<details open><summary>2.0.1</summary>
+<details open><summary>2.1.0</summary>
+
+### Added
+- Support for the new `[txt2mask]` method `panoptic_sam`
+
+### Changed
+- The default inference preset is now `general_v3`
+
+### Fixed
+- Corrected the `none` mask mode behavior
+
+### Removed
+- Less-relevant `[txt2mask]` methods `clip_surgery`, `fastsam`, and `tris`
+
+</details>
+
+<details><summary>2.0.1</summary>
 
 ### Changed
 - Default `color_correct_method` updated to `mkl`

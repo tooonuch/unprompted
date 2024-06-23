@@ -2,9 +2,11 @@
 - The "Generate Shortcode" button should account for the destination type, e.g. `after` should encapsulate the output in `[after]`.
 - Review all shortcode syntax and standardize the use of leading underscore for args.
 - Rework `wizard.js` to utilize jQuery, preferably before it grows much larger.
-- Implement a basic version of Unprompted as a Comfy UI node.
 - Split up the massive `unprompted.py` script into smaller modules.
 - `[filelist]`: Rework shortcode to utilize the `Unprompted.parse_filepath()` method
+- `[image_edit]`: Potentially consider re-implementing effects as individual shortcodes that redirect to `[image_edit]`, similar to how `[sets]` redirects to `[set]`
 - Introduce "meta" block for templates and workflow to house information such as author or homepage URL
 - Ensure use of `Unprompted.parse_arg()` wherever possible, as opposed to `parse_alt_tags()` or `parse_advanced()`
+- Overhaul shortcode documentation to follow the format established in `docs/shortcodes/image_edit.md`
+- Migrate the `mask_sort_methods` list from `[txt2mask]` to `helpers.py` and make it available to all shortcodes or templates
 - Investigate possible memory leak when using the "Reload UI" button in WebUI settings; I am not certain yet if the culprit is Unprompted, WebUI, or Gradio

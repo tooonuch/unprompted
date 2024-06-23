@@ -557,7 +557,7 @@ class Scripts(scripts.Script):
 								elif (block_name == "checkbox"):
 									obj = gr.Checkbox(label=this_label, value=bool(int(content)), info=_info, show_label=_show_label)
 								elif (block_name == "number"):
-									obj = gr.Number(label=this_label, value=int(content), interactive=True, info=_info, minimum=kwargs["_minimum"] if "_minimum" in kwargs else None, maximum=kwargs["_maximum"] if "_maximum" in kwargs else None, show_label=_show_label)
+									obj = gr.Number(label=this_label, value=int(content), interactive=True, info=_info, minimum=float(kwargs["_minimum"]) if "_minimum" in kwargs else None, maximum=float(kwargs["_maximum"]) if "_maximum" in kwargs else None, show_label=_show_label)
 								elif (block_name == "dropdown"):
 									_choices = Unprompted.parse_advanced(kwargs["_choices"], "wizard").split(Unprompted.Config.syntax.delimiter)
 									_allow_custom_value = True if "_allow_custom_value" in pargs else False
@@ -565,7 +565,7 @@ class Scripts(scripts.Script):
 								elif (block_name == "radio"):
 									obj = gr.Radio(label=this_label, choices=kwargs["_choices"].split(Unprompted.Config.syntax.delimiter), interactive=True, value=content, show_label=_show_label)
 								elif (block_name == "slider"):
-									obj = gr.Slider(label=this_label, value=float(content), minimum=kwargs["_minimum"] if "_minimum" in kwargs else 1, maximum=kwargs["_maximum"] if "_maximum" in kwargs else 10, step=kwargs["_step"] if "_step" in kwargs else 1, info=_info, show_label=_show_label)
+									obj = gr.Slider(label=this_label, value=float(content), minimum=float(kwargs["_minimum"]) if "_minimum" in kwargs else 1, maximum=float(kwargs["_maximum"]) if "_maximum" in kwargs else 10, step=kwargs["_step"] if "_step" in kwargs else 1, info=_info, show_label=_show_label)
 								elif (block_name == "image"):
 									if len(content) < 1:
 										content = None

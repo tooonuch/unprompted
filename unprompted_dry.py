@@ -2,16 +2,18 @@
 # https://patreon.com/thereforegames
 # https://github.com/ThereforeGames/unprompted
 
+# This assumes Unprompted is in the same directory as this script (see below for an alternative import method)
 from lib_unprompted.shared import Unprompted
 
 # Main object
 Unprompted = Unprompted()
 
-# Note! If Unprompted is located elsewhere (e.g. as a package), you can try importing it like this instead:
+# Note! If Unprompted is located elsewhere (e.g. as a package), you should be able to import it like this instead:
 
 # import inspect, os, sys
 # import unprompted.lib_unprompted.shared
 # module_path = os.path.dirname(os.path.dirname(inspect.getfile(unprompted.lib_unprompted.shared.Unprompted)))
+# Ensure that Unprompted imports are available at all times:
 # sys.path.insert(0, f"{module_path}")
 # Unprompted = unprompted.lib_unprompted.shared.Unprompted(module_path)
 
@@ -25,8 +27,10 @@ def do_unprompted(string):
 
 	# Cleanup routines
 	Unprompted.cleanup()
+	Unprompted.goodbye()
 
 
+# Allows user input indefinitely
 while True:
 	try:
 		command = input("(INPUT) Unprompted string:")

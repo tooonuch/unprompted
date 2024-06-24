@@ -253,11 +253,11 @@ The asterisk wildcard represents any prompt. Restart the WebUI and you're all se
 
 ## Supercharging [replace] with additional options
 
-I would like to bring a couple pargs (positional arguments) available in `[replace]` that may improve your workflow:
+I would like to bring to your attention a couple pargs (positional arguments) available in `[replace]` that may improve your workflow:
 
 ### _strict
 
-This will prevent `[replace]` from processing the shortcodes in your JSON values *unless* the key matches a string in your content. In other words, you need to use this if you wish to add shortcodes to your dictionary values.
+This will prevent `[replace]` from processing the shortcodes in your JSON values *unless* the key matches a string in your content. In other words, you need to use this if you wish to use shortcodes inside your dictionary values.
 
 ### _now
 

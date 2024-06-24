@@ -236,7 +236,7 @@ And you're done!
 
 If you're happy with your dictionary, you probably don't want to manually write `[replace]` all the time. Luckily, you don't have to.
 
-Create or open a file called `config_user.json` in the root of `unprompted`.
+Create or open a file called `config_user.json` at `unprompted/lib_unprompted`.
 
 Add an entry called `templates` as shown below:
 

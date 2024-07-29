@@ -34,7 +34,7 @@
 
 [wizard accordion _label="⚙️ Advanced Settings"]
 	[set control_cn_preset _new _info="Please make sure you have 'Allow other scripts to control this extension' enabled" _label="ControlNet Preset" _ui="dropdown" _choices="none|{filelist '%BASE_DIR%/templates/%PLACE%/presets/controlnet/*.*' _basename _hide_ext _places='user|common'}"]xl_promax_v1[/set]
-	[set control_ar _label="Aspect Ratio Handling" _new _ui="dropdown" _choices="inform_autopilot|prefer_mine|prefer_cn|exclude_mismatched"]inform_autopilot[/set]
+	[set control_ar _label="Aspect Ratio Handling" _new _ui="dropdown" _choices="inform_autopilot|prefer_mine|prefer_cn|exclude_mismatched"]prefer_cn[/set]
 	[set control_winner_threshold _new _info="If a ControlNet image has at least this many matching tags, it might be chosen even if some other images have more." _ui="number"]5[/set]
 	[set control_winner_margin _new _info="If a ControlNet image is within this many matching tags of the most accurate image, it might be chosen as the winner." _ui="number"]0[/set]
 	[set control_caption_method _new _ui="dropdown" _choices="none|add_difference|add_all" _info="Choose what to do with the captions of the selected image."]add_difference[/set]
@@ -47,7 +47,6 @@
 [# Populate master list]
 [set control_images][filelist "%BASE_DIR%/templates/user/presets/control_freak/images/**/*.png" _recursive][/set]
 [set best_score]0[/set]
-[log]What is control_images? [get control_images][/log]
 
 [# TODO: Load delimiter character dynamically]
 [function get_image_tags image_filename="C:/some/path.png"]

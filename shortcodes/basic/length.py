@@ -1,11 +1,12 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Returns the number of items in a delimited string."
 
 	def run_atomic(self, pargs, kwargs, context):
-		_delimiter = self.Unprompted.parse_advanced(kwargs["_delimiter"], context) if "_delimiter" in kwargs else self.Unprompted.Config.syntax.delimiter
-		_max = self.Unprompted.parse_advanced(kwargs["_max"], context) if "_max" in kwargs else -1
+		_delimiter = self.Unprompted.parse_arg("_delimiter", self.Unprompted.Config.syntax.delimiter)
+		_max = self.Unprompted.parse_arg("_max", -1)
 		this_obj = self.Unprompted.parse_advanced(pargs[0], context)
 		# Support direct array
 		if isinstance(this_obj, list):

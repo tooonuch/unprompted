@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Updates a string using the arguments for replacement logic."
@@ -12,6 +13,7 @@ class Shortcode():
 
 		_insensitive = self.Unprompted.shortcode_var_is_true("_insensitive", pargs, kwargs)
 		_strict = self.Unprompted.parse_arg("_strict", False)
+		_delimiter = self.Unprompted.parse_advanced("_delimiter", self.Unprompted.Config.syntax.delimiter)
 
 		if "_load" in kwargs:
 			jsons = self.Unprompted.load_jsons(self.Unprompted.parse_advanced(kwargs["_load"], context), context)
@@ -22,8 +24,8 @@ class Shortcode():
 
 		for key, value in kwargs.items():
 			if (key == "_from"):
-				from_values.extend(self.Unprompted.parse_advanced(value, context).split(self.Unprompted.Config.syntax.delimiter))
-				to_values.extend(self.Unprompted.parse_advanced(kwargs["_to"] if "_to" in kwargs else "", context).split(self.Unprompted.Config.syntax.delimiter))
+				from_values.extend(self.Unprompted.parse_advanced(value, context).split(_delimiter))
+				to_values.extend(self.Unprompted.parse_advanced(kwargs["_to"] if "_to" in kwargs else "", context).split(_delimiter))
 
 			elif (key[0] != "_"):
 				from_values.append(self.Unprompted.parse_advanced(key, context))

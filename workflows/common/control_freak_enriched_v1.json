@@ -1,0 +1,39 @@
+{
+	"TEMPLATES": {
+		"magic_spice": {
+			"style_preset": "pony_photoreal_spice_v3",
+			"do_fluff": true,
+			"do_gpt": false,
+			"do_networks": true,
+			"do_negatives": true,
+			"do_postprocessing": true,
+			"_enable": true,
+			"_destination": "your_var",
+			"_order": 1
+		},
+		"control_freak": {
+			"control_subject": "[get your_var]",
+			"control_method": "smart",
+			"control_effects": "may_flip_horizontal",
+			"control_cn_preset": "xl_promax_v1",
+			"control_ar": "inform_autopilot",
+			"control_winner_threshold": 5.0,
+			"control_winner_margin": 0.0,
+			"control_caption_method": "add_difference",
+			"control_do_negative": true,
+			"control_do_extra": true,
+			"_enable": true,
+			"_destination": "prompt",
+			"_order": 2
+		},
+		"autopilot": {
+			"inference_preset": "dpm_2m_fast_v1",
+			"img2img_preset": "none",
+			"aspect_ratio": "square_1-1",
+			"flip_aspect_ratio": false,
+			"_enable": true,
+			"_destination": "prompt",
+			"_order": 3
+		}
+	}
+}

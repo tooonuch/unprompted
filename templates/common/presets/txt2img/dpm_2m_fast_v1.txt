@@ -1,0 +1,1 @@
+[sets cfg_scale=8.0 sampler_name="DPM++ 2M" scheduler="Karras" steps=15]

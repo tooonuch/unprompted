@@ -1,4 +1,14 @@
-<details open><summary>2.1.0</summary>
+<details open><summary>2.1.1</summary>
+
+### Changed
+- Reverted the default `mask_method` to `clipseg`
+
+### Fixed
+- Disabled debug mode in the `[txt2mask]` operations
+
+</details>
+
+<details><summary>2.1.0</summary>
 
 ### Added
 - Support for the new `[txt2mask]` method `panoptic_sam`

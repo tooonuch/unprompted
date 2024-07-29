@@ -8,8 +8,9 @@ import sys
 import time
 import logging
 from . import helpers
+from enum import IntEnum, auto
 
-VERSION = "11.1.0"
+VERSION = "11.2.0"
 
 
 def parse_config(base_dir="."):
@@ -30,10 +31,14 @@ def parse_config(base_dir="."):
 
 class Unprompted:
 
+	shortcodes = shortcodes
+	FlowBreaks = IntEnum("FlowBreaks", ["BREAK", "CONTINUE"], start=0)
+
 	def load_shortcodes(self):
 		start_time = time.time()
 		self.log.info("Initializing Unprompted shortcode parser...")
 		# Reset variables for reload support
+
 		self.shortcode_objects = {}
 		self.shortcode_modules = {}
 		self.shortcode_user_vars = {}
@@ -233,6 +238,9 @@ class Unprompted:
 		self.log.debug("Goodbye routine completed.")
 
 	def process_string(self, string, context=None, cleanup_extra_spaces=None):
+		self.shortcodes.global_did_break = False
+		self.shortcodes.global_did_continue = False
+
 		if cleanup_extra_spaces == None:
 			cleanup_extra_spaces = self.Config.syntax.cleanup_extra_spaces
 
@@ -240,9 +248,29 @@ class Unprompted:
 		if context:
 			self.current_context = context
 		# First, sanitize contents
-		string = self.shortcode_parser.parse(self.sanitize_pre(string, self.Config.syntax.sanitize_before), context)
+		try:
+			string = self.shortcode_parser.parse(self.sanitize_pre(string, self.Config.syntax.sanitize_before), context)
+		except:
+			self.log.exception("Could not parse contents.")
+			pass
 		self.conditional_depth = max(0, self.conditional_depth - 1)
+
 		return (self.sanitize_post(string, cleanup_extra_spaces))
+
+	def handle_breaks(self):
+		to_return = -1
+
+		if self.shortcodes.global_did_continue:
+			self.shortcodes.global_did_continue = False
+			to_return = self.FlowBreaks.CONTINUE
+		# This should always go last
+		elif self.shortcodes.global_did_break:
+			to_return = self.FlowBreaks.BREAK
+
+		if to_return > -1:
+			self.shortcodes.global_did_break = False
+
+		return to_return
 
 	def sanitize_pre(self, string, rules_obj, only_remove_last=False):
 		for k, v in rules_obj.__dict__.items():
@@ -369,6 +397,32 @@ class Unprompted:
 		self.prep_for_shortcode(keyword, pargs, kwargs, context, content)
 
 		return default
+
+	def validate_args(self, logger=None, parg_count=None, min_parg_count=None, max_parg_count=None, kwarg_count=None, min_kwarg_count=None, max_kwarg_count=None):
+		"""Validates the number of arguments passed to a shortcode."""
+
+		if not logger:
+			logger = self.log.error
+
+		if parg_count and len(self.pargs) != parg_count:
+			logger(f"Expected {parg_count} positional arguments, but received {len(self.pargs)}")
+			return False
+		if min_parg_count and len(self.pargs) < min_parg_count:
+			logger(f"Expected at least {min_parg_count} positional arguments, but received {len(self.pargs)}")
+			return False
+		if max_parg_count and len(self.pargs) > max_parg_count:
+			logger(f"Expected at most {max_parg_count} positional arguments, but received {len(self.pargs)}")
+			return False
+		if kwarg_count and len(self.kwargs) != kwarg_count:
+			logger(f"Expected {kwarg_count} keyword arguments, but received {len(self.kwargs)}")
+			return False
+		if min_kwarg_count and len(self.kwargs) < min_kwarg_count:
+			logger(f"Expected at least {min_kwarg_count} keyword arguments, but received {len(self.kwargs)}")
+			return False
+		if max_kwarg_count and len(self.kwargs) > max_kwarg_count:
+			logger(f"Expected at most {max_kwarg_count} keyword arguments, but received {len(self.kwargs)}")
+			return False
+		return True
 
 	def parse_advanced(self, string, context=None):
 		"""First runs the string through parse_alt_tags, the result of which then goes through simpleeval"""
@@ -551,12 +605,14 @@ class Unprompted:
 				if att_split[2] == "image":
 					# Check if we supplied a string
 					if isinstance(self.shortcode_user_vars[att], str):
-						import imageio
-						this_val = imageio.imread(self.str_replace_macros(self.shortcode_user_vars[att]))
+						image = helpers.str_to_pil(self.shortcode_user_vars[att])
+						# import imageio
+						# this_val = imageio.imread(self.str_replace_macros(self.shortcode_user_vars[att]))
 					# Otherwise, assume we supplied a PIL image and convert to numpy
 					else:
-						import numpy
-						this_val = numpy.array(self.shortcode_user_vars[att])
+						image = self.shortcode_user_vars[att]
+					import numpy
+					this_val = numpy.array(image)
 				else:
 					this_val = self.shortcode_user_vars[att]
 					# Apply preset model names

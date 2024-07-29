@@ -2,6 +2,7 @@ import random
 
 
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Returns a random number between 0 and a given max value (inclusive)"
@@ -12,7 +13,7 @@ class Shortcode():
 			_min = self.Unprompted.parse_advanced(kwargs["_min"], context)
 			_max = self.Unprompted.parse_advanced(kwargs["_max"], context)
 		else:
-			_max = pargs[0]
+			_max = self.Unprompted.parse_advanced(pargs[0], context)
 
 		if ("_float" in pargs):
 			return (random.uniform(float(_min), float(_max)))

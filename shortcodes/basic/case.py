@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Use within [switch] to run different logic blocks depending on the value of a var."
@@ -14,12 +15,12 @@ class Shortcode():
 		# Default case
 		if len(pargs) == 0:
 			if _var != "":
-				return (self.Unprompted.parse_alt_tags(content, context))
+				return (self.Unprompted.process_string(content, context))
 		# Supports matching against multiple pargs
 		for parg in pargs:
 			if helpers.is_equal(_var, self.Unprompted.parse_advanced(parg, context)):
 				self.Unprompted.shortcode_objects["switch"].switch_var = ""
-				return (self.Unprompted.parse_alt_tags(content, context))
+				return (self.Unprompted.process_string(content, context))
 
 		return ("")
 

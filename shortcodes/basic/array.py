@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Manages a group or list of values."
@@ -24,8 +25,6 @@ class Shortcode():
 					self.Unprompted.log.debug(f"String var {parg} was split into a list.")
 				continue
 			# Print remaining pargs
-			# self.log.debug(f"What is pargs[0]? {pargs[0]}")
-			# self.log.debug(f"What is the second array index? {int(self.Unprompted.parse_advanced(parg, context))}")
 			result_list.append(str(self.Unprompted.shortcode_user_vars[pargs[0]][int(self.Unprompted.parse_advanced(parg, context))]))
 
 		# Set new array values
@@ -53,12 +52,13 @@ class Shortcode():
 		step = self.Unprompted.parse_arg("_step", 1)
 
 		if "_append" in kwargs:
-			split_append = self.Unprompted.parse_advanced(kwargs["_append"], context).split(delimiter)
+			split_append = kwargs["_append"].split(delimiter)
+			# str(self.Unprompted.parse_advanced(kwargs["_append"], context)).split(delimiter)
 			for idx, item in enumerate(split_append):
 				split_append[idx] = self.Unprompted.parse_advanced(item, context)
 			self.Unprompted.shortcode_user_vars[pargs[0]].extend(split_append)
 		if "_prepend" in kwargs:
-			split_prepend = self.Unprompted.parse_advanced(kwargs["_prepend"], context).split(delimiter)
+			split_prepend = kwargs["_prepend"].split(delimiter)
 			for idx, item in enumerate(split_prepend):
 				split_prepend[idx] = self.Unprompted.parse_advanced(item, context)
 			split_prepend.extend(self.Unprompted.shortcode_user_vars[pargs[0]])

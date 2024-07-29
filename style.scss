@@ -1,0 +1,200 @@
+details
+{
+	summary
+	{
+		font-size: 20px;
+		font-weight: bold;
+		cursor: pointer;
+	}
+
+	& > *:not(summary)
+	{
+		padding: 0 20px !important;
+	}
+
+	&[open]
+	{
+		padding-bottom: 20px;
+	}
+}
+
+.prose li
+{
+	text-indent: -20px;
+	padding-left: 2em;
+}
+
+.gradio-container .prose a:is(:link, :visited)
+{
+	text-decoration: underline;
+}
+
+
+#unprompted_result
+{
+	.empty, div[data-testid=block-label]:has(+ .empty)
+	{
+		display: none
+	}
+
+	.cm-content
+	{
+		font-size: 18px;
+		font-family: IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+	}
+}
+
+#promo
+{
+	display: block;
+
+	h1
+	{
+		font-size: 20px;
+		letter-spacing: 0.015em;
+		margin-top: 10px;
+	}
+
+	p
+	{
+		margin: 1em 0;
+	}
+
+	.thumbnail
+	{
+		float: left;
+		width: 150px;
+		margin-bottom: 10px;
+	}
+
+	.gr-button
+	{
+		transition: 0.1s;
+		display: inline-block;
+		padding: 0.25em 0.75em;
+		font-weight: bold;
+		color: var(--background-fill-primary);
+		border-radius: 0.5em;
+		text-align: center;
+		vertical-align: middle;
+		background-color: var(--body-text-color);
+
+		&:hover
+		{
+			background-color: var(--checkbox-background-color-selected);
+			color: var(--body-text-color);
+		}
+	}
+}
+
+.gradio-group div .wizard-autoinclude
+{
+	margin-right: 0;
+	margin-bottom: 8px;
+}
+
+.wizard-autoinclude-row
+{
+	margin: 20px 0;
+}
+
+.autoinclude-order
+{
+	overflow: visible !important;
+	margin-left: 60px !important;
+
+	&:before
+	{
+		content: "Order:";
+		position: absolute;
+		left: -55px;
+		display: inline-block;
+		top: 10px;
+	}
+}
+
+.wizard-autoinclude input[type="checkbox"]:checked + span
+{
+	color: var(--checkbox-background-color-selected);
+}
+
+.unprompted-badge
+{
+	display: inline-block;
+	padding: 0.25em 0.75em;
+	font-size: 0.75em;
+	font-weight: bold;
+	color: white;
+	border-radius: 0.5em;
+	text-align: center;
+	vertical-align: middle;
+	margin-left: var(--size-2);
+	background-color: var(--checkbox-background-color-selected);
+}
+
+.patreon-symbol
+{
+	letter-spacing: -7px;
+	margin-right: 7px;
+}
+
+#file_list
+{
+	li
+	{
+		padding-left: 0;
+		word-wrap: break-word;
+	}
+
+	ul
+	{
+		list-style-type: none;
+		overflow-x: hidden;
+	}
+
+	button
+	{
+		&:before
+		{
+			content: "\01F5CE";
+			position: absolute;
+			left: 0;
+		}
+
+		display: block;
+		text-align: left;
+		width: 100%;
+		padding-left: 15px;
+		position: relative;
+	}
+}
+
+#wizard-dropdown
+{
+	li.autoincluded, input.autoincluded
+	{
+		color: var(--checkbox-background-color-selected);
+	}
+
+	li.autoincluded::before, #wizard-dropdown div:has(> input.autoincluded)::before
+	{
+		content: "🪄";
+		display: inline-block;
+	}
+
+	li:not(.active)::before
+	{
+		position: absolute;
+		left: -2px;
+	}
+}
+
+.wizard-banner
+{
+	mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 67%, rgba(0, 0, 0, 0) 100%);
+}
+
+.wizard-banner img
+{
+	border-radius: 10px 10px 0 0;
+}

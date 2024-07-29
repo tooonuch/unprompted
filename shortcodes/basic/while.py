@@ -2,6 +2,7 @@ import operator
 
 
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		import lib_unprompted.helpers as helpers
 		self.Unprompted = Unprompted
@@ -61,6 +62,13 @@ class Shortcode():
 					final_string += self.Unprompted.process_string(content, context)
 				else:
 					final_string += self.Unprompted.process_string(self.Unprompted.sanitize_pre(content, self.Unprompted.Config.syntax.sanitize_block, True), context, False)
+
+				break_type = self.Unprompted.handle_breaks()
+				if break_type == self.Unprompted.FlowBreaks.BREAK:
+					break
+				elif break_type == self.Unprompted.FlowBreaks.CONTINUE:
+					continue
+
 			else:
 				break
 

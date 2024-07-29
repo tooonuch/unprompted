@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "It's a do-until loop."
@@ -15,8 +16,14 @@ class Shortcode():
 			else:
 				final_string += self.Unprompted.process_string(self.Unprompted.sanitize_pre(content, self.Unprompted.Config.syntax.sanitize_block, True), context, False)
 
+			break_type = self.Unprompted.handle_breaks()
+			if break_type == self.Unprompted.FlowBreaks.BREAK:
+				break
+
 			if (self.Unprompted.parse_advanced(kwargs["until"], context)):
-				return (final_string)
+				break
+
+		return final_string
 
 	def ui(self, gr):
 		return [

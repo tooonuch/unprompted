@@ -8,7 +8,7 @@ class Shortcode():
 	def run_atomic(self, pargs, kwargs, context):
 		from PIL import Image
 		return_string = ""
-		delimiter = ","
+		delimiter = self.Unprompted.parse_arg("delimiter", ",")
 
 		image = self.Unprompted.parse_image_kwarg("file")
 		if not image:

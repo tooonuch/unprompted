@@ -1116,7 +1116,7 @@ class Shortcode():
 						import random
 						random.shuffle(all_masks)
 					elif mask_sort_method == "big-to-small":
-						all_masks = sorted(all_masks, key=lambda x: x.shape[0] * x.shape[1], reverse=True)
+						all_masks = sorted(all_masks, key=lambda x: x.shape[0] * x.shape[1], reverse=False)
 					elif mask_sort_method == "left-to-right" or mask_sort_method == "top-to-bottom":
 						i = 0
 

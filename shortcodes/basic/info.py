@@ -1,4 +1,5 @@
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Returns various types of metadata about the content."
@@ -19,8 +20,18 @@ class Shortcode():
 		if "filename" in pargs:
 			from pathlib import Path
 			return_string += Path(content).stem + delimiter
+		if "directory" in pargs:
+			from pathlib import Path
+			return_string += str(Path(content).parent.name) + delimiter
+		if "extension" in pargs:
+			from pathlib import Path
+			return_string += Path(content).suffix + delimiter
+		if "path" in pargs:
+			from pathlib import Path
+			return_string += str(Path(content).resolve().parent) + delimiter
 		if "string_count" in kwargs:
-			return_string += str(content.count(kwargs["string_count"])) + delimiter
+			str_to_check = self.Unprompted.parse_arg("string_count", "")
+			return_string += str(content.count(str_to_check)) + delimiter
 		if "clip_count" in pargs:
 			try:
 				from ldm.modules.encoders.modules import FrozenCLIPEmbedder

@@ -1,4 +1,11 @@
-<details open><summary>0.2.0</summary>
+<details open><summary>0.2.1</summary>
+
+### Changed
+- The `magic_negative` variable now uses `_defer` which allows presets to check for other Magic Spice settings such as `do_networks` to alter the negative prompt
+
+</details>
+
+<details><summary>0.2.0</summary>
 
 ### Added
 - Spices can now specify `magic_fluff_prefix` to add a prefix to the prompt

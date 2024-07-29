@@ -9,9 +9,13 @@ global_keywords = {}
 # The set of all end-words for globally-registered block-scoped shortcodes.
 global_endwords = set()
 
+global_did_break = False
+global_did_continue = False
+
 
 # Decorator function for globally registering shortcode handlers.
 def register(keyword, endword=None, preprocessor=None):
+
 	def register_function(func):
 		global_keywords[keyword] = (func, endword, preprocessor)
 		if endword:
@@ -48,6 +52,7 @@ class ShortcodeRenderingError(ShortcodeError):
 
 # Input text is parsed into a tree of Node instances.
 class Node:
+
 	def __init__(self):
 		self.children = []
 
@@ -57,10 +62,14 @@ class Node:
 
 # Represents ordinary text not enclosed in tag delimiters.
 class Text(Node):
+
 	def __init__(self, text):
 		self.text = text
 
 	def render(self, context):
+		global global_did_break
+		if global_did_break:
+			return ""
 		return self.text
 
 
@@ -110,7 +119,18 @@ class AtomicShortcode(Shortcode):
 	# in a ShortcodeRenderingError. The original exception will still be
 	# available via the exception's __cause__ attribute.
 	def render(self, context):
-		if self.token.blocked: return self.token.raw_text
+		global global_did_break, global_did_continue
+		if self.token.blocked:
+			return self.token.raw_text
+		if self.token.keyword == "break":
+			global_did_break = True
+		elif self.token.keyword == "continue":
+			global_did_continue = True
+			global_did_break = True
+
+		if global_did_break:
+			return ""
+
 		try:
 			return str(self.handler(self.token.keyword, self.pargs, self.kwargs, context))
 		except Exception as ex:
@@ -134,7 +154,11 @@ class BlockShortcode(Shortcode):
 	# in a ShortcodeRenderingError. The original exception will still be
 	# available via the exception's __cause__ attribute.
 	def render(self, context):
-		if self.token.blocked: return self.token.raw_text
+		global global_did_break
+		if self.token.blocked:
+			return self.token.raw_text
+		elif global_did_break:
+			return ""
 		content = ''.join(child.render(context) for child in self.children)
 		try:
 			return str(self.handler(self.token.keyword, self.pargs, self.kwargs, context, content))
@@ -168,6 +192,7 @@ class BlockShortcode(Shortcode):
 # If `ignore_unknown` is true, unknown shortcodes are ignored. If this parameter
 # is false (the default), unknown shortcodes cause an error.
 class Parser:
+
 	def __init__(self, start='[%', end='%]', esc='\\', inherit_globals=True, ignore_unknown=False):
 		self.start = start
 		self.end = end
@@ -192,41 +217,51 @@ class Parser:
 
 		lexer = Lexer(text, self.start, self.end, self.esc_start)
 		for token in lexer.tokenize():
-			if self.blocking_depth > 0: token.blocked = True
+			if self.blocking_depth > 0:
+				token.blocked = True
 
 			if token.type == "TEXT":
 				stack[-1].children.append(Text(token.text))
 			elif token.keyword in self.keywords:
 				# Hardcoded bypass for multiline comments
-				if len(expecting) > 0 and "##" in self.keywords and expecting[-1] == self.keywords["##"][1]: continue
+				if len(expecting) > 0 and "##" in self.keywords and expecting[-1] == self.keywords["##"][1]:
+					continue
+
 				handler, endword, preprocessor = self.keywords[token.keyword]
 				if endword:
 					node = BlockShortcode(token, handler, preprocessor)
 
-					if self.blocking_depth: self.blocking_depth += 1
+					if self.blocking_depth:
+						self.blocking_depth += 1
 					elif preprocessor:
 						added_depth = int(node.run_preprocess(context))
 						self.blocking_depth += added_depth
 
 					expecting.append(endword)
 					stack[-1].children.append(node)
-					if self.blocking_depth < 2: stack.append(node)
+					if self.blocking_depth < 2:
+						stack.append(node)
 				else:
 					node = AtomicShortcode(token, handler, preprocessor)
-					if preprocessor: node.render_preprocess(context)
+					if preprocessor:
+						node.render_preprocess(context)
 					stack[-1].children.append(node)
 			elif token.keyword in self.endwords:
 				if len(expecting) == 0:
 					msg = f"Unexpected '{token.keyword}' tag in line {token.line_number}."
 					raise ShortcodeSyntaxError(msg)
 				elif token.keyword == expecting[-1]:
-					if self.blocking_depth > 0: self.blocking_depth -= 1
+					if self.blocking_depth > 0:
+						self.blocking_depth -= 1
 					expecting.pop()
 
-					if self.blocking_depth > 0: stack[-1].children.append(Text(token.raw_text))
-					else: stack.pop()
+					if self.blocking_depth > 0:
+						stack[-1].children.append(Text(token.raw_text))
+					else:
+						stack.pop()
 
-				elif token.blocked: stack[-1].children.append(Text(token.raw_text))
+				elif token.blocked:
+					stack[-1].children.append(Text(token.raw_text))
 				else:
 					msg = f"Unexpected '{token.keyword}' tag in line {token.line_number}. "
 					msg += f"The shortcode parser was expecting a closing '{expecting[-1]}' tag."
@@ -257,6 +292,7 @@ class Parser:
 
 
 class Token:
+
 	def __init__(self, token_type, token_text, raw_text, line_number):
 		words = token_text.split()
 		self.keyword = words[0] if words else ''
@@ -271,6 +307,7 @@ class Token:
 
 
 class Lexer:
+
 	def __init__(self, text, start, end, esc_start):
 		self.text = text
 		self.start = start

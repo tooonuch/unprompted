@@ -158,16 +158,16 @@ def str_to_rgb(color_string):
 
 
 def str_to_pil(string):
+	from PIL import Image
 	log = get_logger()
 
 	if isinstance(string, str) and string.startswith("<PIL.Image.Image"):
 		# Get the PIL object from the memory address
-		# <PIL.Image.Image image mode=RGBA size=1024x1024 at 0x2649930D270>
+		# <PIL.Image.Image image mode=RGBA size=1024x1024 at 0x...>
 
 		try:
 			import ctypes
 			import re
-			from PIL import Image
 
 			# Extract the memory address from the string
 			address = re.search(r"at (0x[0-9A-F]+)", string).group(1)

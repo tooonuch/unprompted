@@ -7,6 +7,7 @@ class Shortcode():
 		self.destination = "after"
 		# Prevent memory address errors
 		self.copied_images = []
+		self.remembered_images = []
 		self.resample_methods = helpers.pil_resampling_dict
 
 	def run_atomic(self, pargs, kwargs, context):
@@ -17,6 +18,9 @@ class Shortcode():
 		except ImportError:
 			self.log.warning("Could not import torch. Some features may not work.")
 			pass
+
+		if "unload_cache" in pargs:
+			self.remembered_images = []
 
 		image = self.Unprompted.parse_image_kwarg("input")
 		if not image:
@@ -34,7 +38,31 @@ class Shortcode():
 		combined_args = pargs + list(kwargs.keys())
 
 		for this_arg in combined_args:
-			if this_arg == "mask":
+			if this_arg == "upscale":
+				from modules import shared
+
+				_models = helpers.ensure(self.Unprompted.parse_arg(this_arg, "None"), list)
+				scale = self.Unprompted.parse_arg("scale", 1)
+				visibility = self.Unprompted.parse_arg("upscale_alpha", 1.0)
+				limit = self.Unprompted.parse_arg("upscale_model_limit", 100)
+				keep_res = self.Unprompted.parse_arg("upscale_keep_res", False)
+
+				models = []
+				for model in _models:
+					for upscaler in shared.sd_upscalers:
+						if upscaler.name == model:
+							models.append(upscaler)
+							break
+					if len(models) >= limit:
+						self.log.info(f"Upscale model limit satisfied ({limit}). Proceeding...")
+						break
+
+				for model in models:
+					self.log.info(f"Upscaling {scale}x with {model.name}...")
+					image = model.scaler.upscale(image, scale, model.data_path)
+					if keep_res:
+						image = image.resize(orig_image.size, Image.ANTIALIAS)
+			elif this_arg == "mask":
 				mask = self.Unprompted.parse_image_kwarg(this_arg)
 				if not mask:
 					continue
@@ -56,7 +84,8 @@ class Shortcode():
 							r, g, b, a = pixels[x, y]
 							if a == 0:
 								pixels[x, y] = (0, 0, 0, 0)
-
+			elif this_arg == "remember":
+				self.remembered_images.append(image)
 			elif this_arg == "mode":
 				mode = self.Unprompted.parse_arg("mode", "RGB")
 				image = image.convert(mode)
@@ -70,6 +99,10 @@ class Shortcode():
 
 				paste_x = self.Unprompted.parse_arg("paste_x", 0)
 				paste_y = self.Unprompted.parse_arg("paste_y", 0)
+
+				# paste_origin = self.Unprompted.parse_arg("paste_origin", "top_left")
+				# if paste_origin == "top_right":
+				#	paste_x =
 
 				# Ensure that paste is RGBA
 				if paste.mode != "RGBA":

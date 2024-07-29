@@ -242,3 +242,17 @@ Since arguments are processed in order, you can run `save` after some operations
 ```
 [image_edit width=350 height=350 save="C:/image/after_resizing.png" mask="C:/some/mask.png"]
 ```
+
+### upscale
+
+Enhances the `input` image using one or more of the upscaler methods available in the A1111 WebUI.
+
+The value of this kwarg is a delimited list of upscaler model name(s) to use.
+
+Supports the `scale` kwarg which is the scale factor to use. Defaults to 1.
+
+Supports the `upscale_alpha` kwarg which is the opacity value to use when blending the result back into the original image. Defaults to 1, or full opacity.
+
+Supports the `upscale_model_limit` kwarg which is the maximum number of `upscale` models to use. Defaults to 100. For example, let's say you supply 4 different models and set the `upscale_model_limit` to 1 - if the first couple models are not found on the user's system, it will use the 3rd model and then disregard the 4th.
+
+Supports the `upscale_keep_res` parg which will maintain the original resolution of the `input` image.

@@ -8,7 +8,7 @@
 		[civitai _file="sdxl_offset_example_v10" _id=137511 _weight=0.5]
 	[/if]
 [/set]
-[set magic_negative]
+[set magic_negative _defer]
 	[if "sd_base=='sdxl' or sd_base=='sd3'"]
 		text, watermark, low-quality, signature, moiré pattern, downsampling, aliasing, distorted, blurry, glossy, blur, jpeg artifacts, compression artifacts, poorly drawn, low-resolution, bad, distortion, twisted, excessive, exaggerated pose, exaggerated limbs, grainy, symmetrical, duplicate, error, pattern, beginner, pixelated, fake, hyper, glitch, overexposed, high-contrast, bad-contrast
 	[/if]

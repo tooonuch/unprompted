@@ -3,7 +3,47 @@ All notable changes to this project will be documented in this file.
 
 For more details on new features, please check the [Manual](./MANUAL.md).
 
-<details open><summary>11.1.0 - 23 June 2024</summary>
+<details open><summary>11.2.0 - 29 July 2024</summary>
+
+### Added
+- New shortcode `[abs]`: Returns the absolute value of the content
+- New shortcode `[break]`: Exit a loop or `[function]` early
+- New shortcode `[continue]`: Skips the remaining code within the current iteration of the loop and moves on to the next iteration
+- New shortcode `[each]`: Foreach-style loop
+- New shortcode `[exists]`: Returns whether the specified variable(s) have been set
+- New shortcode `[help]`: Displays documentation for a given shortcode or feature
+- New template Autopilot v0.0.1: Quickly set up your basic inference settings, such as CFG and image dimensions
+- New template Control Freak v0.0.1: Parses your prompt for relevant ControlNet images to use
+- Bodysnatcher v2.1.1
+- Magic Spice v0.2.1
+- cn_upscaler_v0.1.0: Added support for SDXL upscaling with the Promax model
+- New txt2img preset `dpm_2m_fast_v1`: Uses the DPM++ 2M sampler with only 15 steps, which is surprisingly enough to achieve convergence on some of the newer SDXL models
+- New ControlNet preset `xl_promax_v1`: Uses Xinsir's excellent all-in-one ControlNet model
+- Updated Magic Spice preset `pony_photoreal_spice_v3`
+- Updated ControlNet preset `xl_mistoline_v2`: Improved prompt adherence
+- `[info]`: Now supports the `directory`, `extension`, and `path` pargs to retrieve different parts of filepath content
+- `[info]`: Now parses the `string_count` kwarg for shortcodes
+- `[image_edit]`: Now supports the `upscale` kwarg to enlarge images using upscale models
+- `[img2img_autosize]`: Now supports the `input` kwarg to run the autosizing feature on a custom image
+- `[random]`: Now parses the first parg for shortcodes
+- `[replace]`: Now supports the `_delimiter` kwarg for a custom delimiter
+
+### Changed
+- Converted stylesheet to SASS
+
+### Fixed
+- `[case]`: Fixed an issue when using nested `[for]` loops inside of this block
+- `[img2img]`: Removed unnecessary `gradio` import to significantly improve startup time outside of WebUI
+- `[image_info]`: Fixed `delimiter` kwarg
+- `[txt2mask]`: Fixed order of `big-to-small` mask sort method
+
+### Removed
+- `[upscale]`: This shortcode has been retired in favor of `[image_edit upscale]`
+- img2img presets no longer contain inference settings that overlap with txt2img presets, such as the sampler name or CFG scale (this is because both presets are now easily selected through the Autopilot template)
+
+</details>
+
+<details><summary>11.1.0 - 23 June 2024</summary>
 
 ### Added
 - `[txt2mask]`: New method `panoptic_sam` ([source](https://github.com/segments-ai/panoptic-segment-anything)) for instance-based masking - really good results!

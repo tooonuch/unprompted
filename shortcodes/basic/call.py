@@ -4,6 +4,7 @@ import os
 
 
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Processes the function or filepath content of the first parg."
@@ -71,6 +72,7 @@ class Shortcode():
 				self.Unprompted.shortcode_objects["set"].run_block([key], {}, context, self.Unprompted.parse_alt_tags(value))
 
 			contents = self.Unprompted.process_string(contents, next_context)
+			break_type = self.Unprompted.handle_breaks()
 
 			if contents == "_false":
 				contents = ""

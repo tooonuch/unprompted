@@ -1,10 +1,5 @@
-try:
-	import gradio as gr
-except:
-	pass
-
-
 class Shortcode():
+
 	def __init__(self, Unprompted):
 		self.Unprompted = Unprompted
 		self.description = "Runs an img2img task inside of an [after] block."

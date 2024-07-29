@@ -11,7 +11,7 @@
 		[civitai lora "difConsistency_detail" 0.2 _id=87378]
 	[/else]
 [/set]
-[set magic_negative _append]
+[set magic_negative _append _defer]
 	[if sd_base="sdxl"]
 		text, watermark, low-quality, signature, moiré pattern, downsampling, aliasing, distorted, blurry, glossy, blur, jpeg artifacts, compression artifacts, poorly drawn, low-resolution, bad, distortion, twisted, excessive, exaggerated pose, exaggerated limbs, grainy, symmetrical, duplicate, error, pattern, beginner, pixelated, fake, hyper, glitch, overexposed, high-contrast, bad-contrast
 	[/if]

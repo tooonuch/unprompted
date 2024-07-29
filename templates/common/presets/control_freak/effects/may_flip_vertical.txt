@@ -1,0 +1,3 @@
+[if "{random 1} == 1"]
+	[set winner][image_edit input="{get winner}" flip_vertical remember return][/set]
+[/if]

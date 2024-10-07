@@ -606,8 +606,8 @@ class Unprompted:
 					# Check if we supplied a string
 					if isinstance(self.shortcode_user_vars[att], str):
 						image = helpers.str_to_pil(self.shortcode_user_vars[att])
-						# import imageio
-						# this_val = imageio.imread(self.str_replace_macros(self.shortcode_user_vars[att]))
+					# import imageio
+					# this_val = imageio.imread(self.str_replace_macros(self.shortcode_user_vars[att]))
 					# Otherwise, assume we supplied a PIL image and convert to numpy
 					else:
 						image = self.shortcode_user_vars[att]
@@ -754,9 +754,9 @@ class Unprompted:
 				if self.routine == "after":
 					self.shortcode_user_vars["init_images"][idx] = self.after_processed.images[idx]
 
-				# Update the SD vars if Unprompted.main_p exists
-				#if hasattr(self, "main_p"):
-				#	self.update_stable_diffusion_vars(self.main_p)
+			# Update the SD vars if Unprompted.main_p exists
+			#if hasattr(self, "main_p"):
+			#	self.update_stable_diffusion_vars(self.main_p)
 			return True
 		return None
 
@@ -770,9 +770,9 @@ class Unprompted:
 		return string.replace(self.Config.syntax.tag_start, new_start).replace(self.Config.syntax.tag_end, new_end)
 
 	def shortcode_install_requirements(self, purpose, requirements):
-		if self.Config.skip_requirements:
-			self.log.debug("Skipping requirements installation per `Config.skip_requirements`.")
-			return True
+		# if self.Config.skip_requirements:
+		# 	self.log.debug("Skipping requirements installation per `Config.skip_requirements`.")
+		# 	return True
 
 		import inspect, pkg_resources
 

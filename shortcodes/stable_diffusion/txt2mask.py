@@ -292,7 +292,7 @@ class Shortcode():
 					# Download model weights if we don't have them yet
 					if not os.path.exists(sam_file):
 						self.log.info("Downloading SAM model weights...")
-						helpers.download_file(sam_file, f"https://dl.fbaipublicfiles.com/segment_anything/{sam_filename}")
+						helpers.download_file(sam_file, f"https://dl.fbaipublicfiles.com/segment_anything/{sam_checkpoint}")
 
 					sam = build_sam(checkpoint=sam_file)
 					sam.to(device=device)
